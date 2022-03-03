@@ -1,4 +1,10 @@
-import React, { Component, useEffect, useLayoutEffect, useState } from "react";
+import React, {
+  Component,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import PropTypes from "prop-types";
 
 export function LifeCycleF({ name }) {
@@ -20,7 +26,7 @@ export class LifeCycleC extends Component {
   // ===== mountClassInstance begin =====
   // 1.
   constructor(props) {
-    super(props);
+    super(props); 
     console.log(`constructor: `, props);
   }
 
@@ -91,7 +97,10 @@ export class LifeCycleC extends Component {
   }
 
   // 更新阶段
-  UNSAFE_componentWillReceiveProps() {}
+  UNSAFE_componentWillReceiveProps(newProps, nextContext) {
+    console.log("UNSAFE_componentWillReceiveProps newProps:", newProps);
+    console.log("UNSAFE_componentWillReceiveProps nextContext:", nextContext);
+  }
 }
 
 // React 两个重要阶段
@@ -172,9 +181,14 @@ function FunctionLifeCycle(props) {
     console.log("props变化: componentWillReceiveProps");
   }, [props]);
 
+  let ref = useRef(false);
   useEffect(() => {
     /*  */
-    console.log(" 组件更新完成: componentDidUpdate ");
+    if (ref.current) {
+      console.log(" 组件更新完成: componentDidUpdate ");
+    } else {
+      ref.current = true;
+    }
   });
 
   return (
@@ -203,4 +217,59 @@ export function FunctionLifeCycleContainer() {
       <button onClick={() => setRender(false)}>卸载组件</button>
     </div>
   );
+}
+
+class TestClassComponentBase extends Component {
+  // UNSAFE_componentWillReceiveProps(newProps, nextContext) {
+  //   console.log("UNSAFE_componentWillReceiveProps newProps:", newProps);
+  //   console.log("UNSAFE_componentWillReceiveProps nextContext:", nextContext);
+  // }
+  state = {};
+  static propTypes = {
+    number: PropTypes.number,
+  };
+
+  render() {
+    const { number } = this.props;
+    return (
+      <div>
+        <h1>prop number: {number}</h1>
+      </div>
+    );
+  }
+
+  static getDerivedStateFromProps(nextProps, preState) {
+    console.log("getDerivedStateFromProps newProps:", nextProps);
+    console.log("getDerivedStateFromProps preState:", preState);
+    return Object.assign({}, preState);
+  }
+
+  getSnapshotBeforeUpdate(preProps, preState) {
+    console.log("getDerivedStateFromProps preProps:", preProps);
+    console.log("getDerivedStateFromProps preState:", preState);
+    return Object.assign({ name: "zxh" }, preState);
+  }
+  componentDidUpdate(prevProps, prevState, snapshot) {
+    console.log("componentDidUpdate preProps: ", prevProps);
+    console.log("componentDidUpdate prevState: ", prevState);
+    console.log("componentDidUpdate snapshot: ", snapshot);
+  }
+}
+
+export class TestClassComponent extends Component {
+  state = {
+    number: 0,
+  };
+  render() {
+    return (
+      <div>
+        <TestClassComponentBase number={this.state.number} />
+        <button
+          onClick={() => this.setState({ number: this.state.number + 1 })}
+        >
+          change state
+        </button>
+      </div>
+    );
+  }
 }

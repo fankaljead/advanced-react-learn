@@ -1,4 +1,4 @@
-# [React 进阶实践](https://juejin.cn/book/6945998773818490884) 阅读记录 + 代码
+React 进阶实践
 
 ## 1. JSX
 
@@ -1302,7 +1302,9 @@ React 两个重要阶段，
 1. **render 阶段** React 在调和( render )阶段会深度遍历 React fiber 树，**目的就是发现不同( diff )**，不同的地方就是接下来需要更新的地方
 2. **commit 阶段** 对于变化的组件，就会执行 render  函数。在一次调和过程完毕之后，就到了commit 阶段，**commit 阶段会创建修改真实的 DOM 节点。**
 
-如果在一次调和的过程中，发现了一个 `fiber tag = 1 ` 类组件的情况，就会按照类组件的逻辑来处理。对于类组件的处理逻辑，首先判断类组件是否已经被创建过，首先来看看源码里怎么写的。
+如果在一次调和的过程中，发现了一个 `fiber tag = 1 ` 类组件的情况，就会按照类组件的逻辑来处理。
+
+**对于类组件的处理逻辑，首先判断类组件是否已经被创建过**，首先来看看源码里怎么写的。
 
 ```js
 // react-reconciler/src/ReactFiberBeginWork.js
@@ -1310,19 +1312,22 @@ React 两个重要阶段，
 /* workloop React 处理类组件的主要功能方法 */
 function updateClassComponent(){
     let shouldUpdate
-    const instance = workInProgress.stateNode // stateNode 是 fiber 指向 类组件实例的指针。
-     if (instance === null) { // instance 为组件实例,如果组件实例不存在，证明该类组件没有被挂载过，那么会走初始化流程
+    const instance = workInProgress.stateNode // stateNode 是 fiber 指向 类组件实例的指针
+	// instance 为组件实例,如果组件实例不存在，证明该类组件没有被挂载过，那么会走初始化流程
+    if (instance === null) {
         constructClassInstance(workInProgress, Component, nextProps); // 组件实例将在这个方法中被new。
-        //初始化挂载组件流程
+        // 初始化挂载组件流程
         mountClassInstance(workInProgress, Component, nextProps,renderExpirationTime );
         shouldUpdate = true; // shouldUpdate 标识用来证明 组件是否需要更新。
-     }else{
-        shouldUpdate = updateClassInstance(current, workInProgress, Component, nextProps, renderExpirationTime) // 更新组件流程
-     }
-     if(shouldUpdate){
-         nextChildren = instance.render(); /* 执行render函数 ，得到子节点 */
-         reconcileChildren(current,workInProgress,nextChildren,renderExpirationTime) /* 继续调和子节点 */
-     }
+    }else{
+        shouldUpdate = updateClassInstance(current, workInProgress,
+                                           Component, nextProps, renderExpirationTime) // 更新组件流程
+    }
+
+    if(shouldUpdate){
+        nextChildren = instance.render(); /* 执行render函数 ，得到子节点 */
+        reconcileChildren(current,workInProgress,nextChildren,renderExpirationTime) /* 继续调和子节点 */
+    }
 }
 ```
 
@@ -1341,11 +1346,11 @@ function updateClassComponent(){
 
 #### 5.1.1 React 类组件生命周期过程
 
-React 的大部分生命周期的执行，都在 `mountClassInstance` 和`updateClassInstance` 这两个方法中执行
+React 的大部分生命周期的执行，都在 **`mountClassInstance` 和 `updateClassInstance`** 这两个方法中执行
 
 - **初始化阶段**
 
-    1. **`contructor` 执行**
+    1. **`contructor` 执行** -> `constructClassInstance(workInProgress, Component, nextProps)`
 
         在 mount 阶段，首先执行的 constructClassInstance 函数 ，在实例化组件之后，会调用 mountClassInstance 组件初始化。
 
@@ -1357,21 +1362,24 @@ React 的大部分生命周期的执行，都在 `mountClassInstance` 和`update
              /* ctor 就是我们写的类组件，获取类组件的静态方法 */
             const getDerivedStateFromProps = ctor.getDerivedStateFromProps;
 
+            // 存在 getDerivedStateFromProps 生命周期
             if (typeof getDerivedStateFromProps === 'function') {
                 /* 这个时候执行 getDerivedStateFromProps 生命周期 ，得到将合并的state */
                 const partialState = getDerivedStateFromProps(nextProps, prevState);
+                // 合并state
                 const memoizedState = partialState === null || partialState === undefined ? prevState :
-                Object.assign({}, prevState, partialState); // 合并state
+                					  Object.assign({}, prevState, partialState);
+
                 workInProgress.memoizedState = memoizedState;
-                /* 将state 赋值给我们实例上，instance.state  就是我们在组件中 this.state获取的state*/
+                /* 将state 赋值给我们实例上，instance.state  就是我们在组件中 this.state获取的state */
                 instance.state = workInProgress.memoizedState;
             }
 
+            // 没有使用 getDerivedStateFromProps getSnapshotBeforeUpdate componentWillMount
+            // 执行 componentWillMount
             if(typeof ctor.getDerivedStateFromProps !== 'function' &&
                typeof instance.getSnapshotBeforeUpdate !== 'function' &&
                typeof instance.componentWillMount === 'function' ){
-                 /* 当 getDerivedStateFromProps 和 getSnapshotBeforeUpdate 不存在的时候 ，
-                 执行 componentWillMount*/
                 instance.componentWillMount();
             }
         }
@@ -1381,7 +1389,7 @@ React 的大部分生命周期的执行，都在 `mountClassInstance` 和`update
 
     2. **`getDerivedStateFromProps` 执行**
 
-        在初始化阶段，`getDerivedStateFromProps` 是第二个执行的生命周期，值得注意的是它是从 ctor 类上直接绑定的**静态**方法，传入 `props ，state`。 返回值将和之前的 state 合并，作为新的 state ，传递给组件实例使用。
+        在初始化阶段，`getDerivedStateFromProps` 是第二个执行的生命周期，值得注意的是它是从 ctor 类上**直接绑定的静态方法**，传入 `props ，state`。 返回值将和之前的 state 合并，作为新的 state ，传递给组件实例使用。
 
     3. ~~**`componentWillMount` 执行**~~
 
@@ -1389,7 +1397,7 @@ React 的大部分生命周期的执行，都在 `mountClassInstance` 和`update
 
     4. **`render` 函数执行**
 
-        到此为止 `mountClassInstance` 函数完成，但是上面 `updateClassComponent` 函数， 在执行完 `mountClassInstancec` 后，执行了 render 渲染函数，形成了 children ， 接下来 React 调用 reconcileChildren 方法深度调和 children 。
+        到此为止 `mountClassInstance` 函数完成， `updateClassComponent` 函数在执行完 `mountClassInstancec` 后，执行了 render 渲染函数，形成了 children ， 接下来 React 调用 reconcileChildren 方法深度调和 children 。
 
     5. **`componentDidMount` 执行**
 
@@ -1424,8 +1432,11 @@ React 的大部分生命周期的执行，都在 `mountClassInstance` 和`update
     ```jsx
     function updateClassInstance(current, workInProgress, ctor, newProps, renderExpirationTime){
         const instance = workInProgress.stateNode; // 类组件实例
+
         // 判断是否具有 getDerivedStateFromProps 生命周期
         const hasNewLifecycles =  typeof ctor.getDerivedStateFromProps === 'function'
+
+        // 当没有 getDerivedStateFromProps 但是有生命周期 componentWillReceiveProps
         if(!hasNewLifecycles && typeof instance.componentWillReceiveProps === 'function' ){
             if (oldProps !== newProps || oldContext !== nextContext) {     // 浅比较 props 不相等
                 // 执行生命周期 componentWillReceiveProps
@@ -1434,22 +1445,28 @@ React 的大部分生命周期的执行，都在 `mountClassInstance` 和`update
         }
 
         let newState = (instance.state = oldState);
+
+        // 具有生命周期 getDerivedStateFromProps
         if (typeof getDerivedStateFromProps === 'function') {
             /* 执行生命周期getDerivedStateFromProps  ，逻辑和mounted类似 ，合并state  */
             ctor.getDerivedStateFromProps(nextProps,prevState)
+            // newState 传递给了 shouldComponentUpdate
             newState = workInProgress.memoizedState;
         }
 
         let shouldUpdate = true
+
          /* 执行生命周期 shouldComponentUpdate 返回值决定是否执行render ，调和子节点 */
         if(typeof instance.shouldComponentUpdate === 'function' ){
-            shouldUpdate = instance.shouldComponentUpdate(newProps,newState,nextContext,);
+            shouldUpdate = instance.shouldComponentUpdate(newProps, newState, nextContext);
         }
+
         if(shouldUpdate){
             if (typeof instance.componentWillUpdate === 'function') {
                 instance.componentWillUpdate(); /* 执行生命周期 componentWillUpdate  */
             }
         }
+
         return shouldUpdate
     }
     ```
@@ -1460,11 +1477,11 @@ React 的大部分生命周期的执行，都在 `mountClassInstance` 和`update
 
     2. **`getDerivedStateFromProps` 执行**
 
-        接下来执行生命周期`getDerivedStateFromProps`， 返回的值用于合并state，生成新的state
+        接下来执行生命周期 `getDerivedStateFromProps`， 返回的值用于合并state，生成新的state
 
     3. **`shouldComponentUpdate` 执行**
 
-        接下来执行生命周期`shouldComponentUpdate`，传入新的 props ，新的 state ，和新的 context ，返回值决定是否继续执行 render 函数，调和子节点。这里应该注意一个问题，`getDerivedStateFromProps` 的返回值可以作为新的 state ，传递给 shouldComponentUpdate
+        接下来执行生命周期 `shouldComponentUpdate`，传入新的 props ，新的 state ，和新的 context ，返回值决定是否继续执行 render 函数，调和子节点。这里应该注意一个问题，`getDerivedStateFromProps` 的返回值可以作为新的 state ，传递给 shouldComponentUpdate
 
     4. **`componentWillUpdate` 执行**
 
@@ -1503,7 +1520,7 @@ React 的大部分生命周期的执行，都在 `mountClassInstance` 和`update
 
         更新阶段对应的生命周期的执行顺序：
 
-        componentWillReceiveProps( props 改变) / getDerivedStateFromProp ->  shouldComponentUpdate -> componentWillUpdate -> render  ->  getSnapshotBeforeUpdate ->  componentDidUpdate
+        componentWillReceiveProps( props 改变) / **getDerivedStateFromProp** ->  shouldComponentUpdate -> componentWillUpdate -> render  ->  getSnapshotBeforeUpdate ->  componentDidUpdate
 
 - **销毁阶段**
 
@@ -1529,14 +1546,16 @@ React 的大部分生命周期的执行，都在 `mountClassInstance` 和`update
 
 1. **`constructor(props)`**
 
+    constructor 在类组件创建实例时调用，而且初始化的时候执行一次，所以可以在 constructor 做一些初始化的工作。
+
     - **初始化 state** ，比如可以用来截取路由中的参数，赋值给 state 。
-    - 对类组件的事件做一些处理，比如**绑定 this ， 节流，防抖**等。
-    - **对类组件进行一些必要生命周期的劫持，渲染劫持**，这个功能更适合反向继承的HOC ，在 HOC 环节，会详细讲解反向继承这种模式。
+    - 对类组件的事件做一些处理，比如 **绑定 this ， 节流，防抖**等。
+    - **对类组件进行一些必要生命周期的劫持，渲染劫持**，这个功能更适合反向继承的 高阶组件HOC
 
     ```jsx
     constructor(props){
         super(props)        // 执行 super ，别忘了传递props,才能在接下来的上下文中，获取到props。
-        this.state={       // ① 可以用来初始化state，比如可以用来获取路由中的
+        this.state = {       // ① 可以用来初始化state，比如可以用来获取路由中的
             name:'alien'
         }
         this.handleClick = this.handleClick.bind(this) /* ② 绑定 this */
@@ -1582,9 +1601,9 @@ React 的大部分生命周期的执行，都在 `mountClassInstance` 和`update
     }
     ```
 
-    只要组件更新，就会执行 `getDerivedStateFromProps`，不管是 props 改变，还是 setState ，或是 forceUpdate
+    **只要组件更新，就会执行 `getDerivedStateFromProps`**，不管是 props 改变，还是 setState ，或是 forceUpdate
 
-3. **`componentWillMount` 和 `UNSAFE_componentWillMount`**
+3. **`UNSAFE_componentWillMount`**
 
     在 React V16.3 componentWillMount ，componentWillReceiveProps ， componentWillUpdate 三个生命周期加上了不安全的标识符 `UNSAFE`，变成了如下形式:
 
@@ -1603,9 +1622,9 @@ React 的大部分生命周期的执行，都在 `mountClassInstance` 和`update
     - **componentWillReceiveProps 可以用来监听父组件是否执行 render 。**
     - componentWillReceiveProps 可以用来接受 props 改变，组件可以根据props改变，来决定是否更新  state ，因为可以访问到 this ， 所以可以在异步成功回调(接口请求数据)改变 state 。这个是  getDerivedStateFromProps  不能实现的。
 
-5. **`componentWillUpdate` 和 `UNSAFE_componentWillUpdate`**
+5. **`UNSAFE_componentWillUpdate`**
 
-    UNSAFE_componentWillUpdate 可以意味着在更新之前，此时的 DOM 还没有更新。在这里可以做一些获取 DOM  的操作。就比如说在一次更新中，保存 DOM 之前的信息(记录上一次位置)。但是 React 已经出了新的生命周期  getSnapshotBeforeUpdate 来代替 UNSAFE_componentWillUpdate。
+    `UNSAFE_componentWillUpdate` 可以意味着在更新之前，此时的 DOM 还没有更新（render 之前）。在这里可以做一些获取 DOM  的操作。就比如说在一次更新中，**保存 DOM 之前的信息**(记录上一次位置)。但是 React 已经出了新的生命周期  getSnapshotBeforeUpdate (render 之后) 来代替 UNSAFE_componentWillUpdate。
 
 6. **`render`**
 
@@ -1633,7 +1652,7 @@ React 的大部分生命周期的执行，都在 `mountClassInstance` 和`update
 
     当然这个快照 `snapShot` 不限于 DOM 的信息，也可以是根据 DOM 计算出来产物
 
-    **getSnapshotBeforeUpdate 这个生命周期意义就是配合componentDidUpdate 一起使用，计算形成一个 snapShot 传递给 componentDidUpdate 。保存一次更新前的信息。**
+    **getSnapshotBeforeUpdate 这个生命周期意义就是配合 componentDidUpdate 一起使用，计算形成一个 snapShot 传递给 componentDidUpdate 。保存一次更新前的信息。**
 
 8. **`componentDidUpdate(prevProps, prevState, snapshot)`**
 
@@ -1653,7 +1672,7 @@ React 的大部分生命周期的执行，都在 `mountClassInstance` 和`update
     - prevState 更新之前的 state ；
     - snapshot 为 getSnapshotBeforeUpdate 返回的快照，可以是更新前的 DOM 信息。
 
-    作用
+    **作用**
 
     - componentDidUpdate 生命周期执行，此时 DOM 已经更新，可以直接获取 DOM 最新状态。**这个函数里面如果想要使用 setState ，一定要加以限制，否则会引起无限循环。**
     - **接受 getSnapshotBeforeUpdate 保存的快照 snapshot 信息**。
@@ -1700,11 +1719,11 @@ React 的大部分生命周期的执行，都在 `mountClassInstance` 和`update
     }
     ```
 
-    这个生命周期，**一般用于性能优化**，shouldComponentUpdate 返回值决定是否重新渲染的类组件。需要重点关注的是第二个参数  newState ，如果有 getDerivedStateFromProps 生命周期 ，它的返回值将合并到 newState ，供  shouldComponentUpdate 使用。
+    这个生命周期，**一般用于性能优化**，shouldComponentUpdate **返回值决定是否重新渲染的类组件**。需要重点关注的是第二个参数  newState ，如果有 getDerivedStateFromProps 生命周期 ，它的返回值将合并到 newState ，供  shouldComponentUpdate 使用。
 
 11. **`componentWillUnmount`**
 
-    componentWillUnmount 是组件销毁阶段唯一执行的生命周期，主要做一些收尾工作，比如清除一些可能造成内存泄漏的定时器，延时器，或者是一些事件监听器。
+    **componentWillUnmount 是组件销毁阶段唯一执行的生命周期**，主要做一些收尾工作，比如清除一些可能造成内存泄漏的定时器，延时器，或者是一些事件监听器。
 
     ```jsx
     componentWillUnmount(){
@@ -1736,11 +1755,13 @@ React hooks也提供了 api ，用于弥补函数组件没有生命周期的缺�
 
         第二个参数作为依赖项，是一个数组，可以有多个依赖项，依赖项改变，执行上一次callback 返回的 destory ，和执行新的 effect 第一个参数 callback 。
 
+        传给 `useEffect` 的函数会在浏览器完成布局与绘制 **之后**，在一个延迟事件中被调用。这使得它适用于许多常见的副作用场景，比如设置订阅和事件处理等情况，因为绝大多数操作不应阻塞浏览器对屏幕的更新。
+
         对于 useEffect 执行， React 处理逻辑是采用 **异步调用** ，对于每一个 effect 的 callback， React 会向 `setTimeout` 回调函数一样，**放入任务队列**，等到主线程任务完成，DOM 更新，js 执行完成，视图绘制完毕，才执行。**所以 effect 回调函数不会阻塞浏览器绘制视图**
 
     - **`useLayoutEffect`**
 
-        useLayoutEffect 和 useEffect 不同的地方是采用了**同步执行** ，与 useEffect 的区别在于：
+        useLayoutEffect 和 useEffect 不同的地方是采用了 **同步执行** ，与 useEffect 的区别在于：
 
         - 首先 useLayoutEffect 是在DOM **绘制之前**，这样可以方便修改 DOM ，这样浏览器只会绘制一次，如果修改 DOM 布局放在  useEffect ，那 **useEffect 执行是在浏览器绘制视图之后，接下来又改 DOM  ，就可能会导致浏览器再次回流和重绘**。而且由于两次绘制，视图上可能会造成闪现突兀的效果
         - useLayoutEffect callback **中代码执行会阻塞浏览器绘制**
@@ -1751,7 +1772,7 @@ React hooks也提供了 api ，用于弥补函数组件没有生命周期的缺�
 
         useEffect 对 React 执行栈来看是**异步**执行的，而 componentDidMount / componentDidUpdate  是**同步**执行的，useEffect代码不会阻塞浏览器绘制。在时机上 ，**componentDidMount / componentDidUpdate 和 useLayoutEffect 更类似**
 
-2. **`componentDidMOunt` 替代方案**
+2. **`componentDidMount` 替代方案**
 
     ```jsx
     // componentDidMount 替代方案
@@ -1815,5 +1836,799 @@ React hooks也提供了 api ，用于弥补函数组件没有生命周期的缺�
 
     没有第二个参数，那么每一次执行函数组件，都会执行该 effect。
 
-6.
 
+
+## 6. 多功能 Ref
+
+### 6.1 ref 的基本概念和使用
+
+ Ref 除了 **获取真实 DOM 元素和获取类组件实例层面上** 这两项功能之外，在使用上还有很多小技巧
+
+#### 6.1.1 **Ref 对象的创建**
+
+所谓 ref 对象就是用 `createRef` 或者 `useRef` 创建出来的对象，一个标准的 ref 对象应该是如下的样子：
+
+```js
+{
+    current:null , // current指向ref对象获取到的实际内容，可以是dom元素，组件实例，或者其他。
+}
+```
+
+当 ref 被传递给 `render` 中的元素时，对该节点的引用可以在 ref 的 `current` 属性中被访问。
+
+```js
+const node = this.myRef.current;
+```
+
+ref 的值根据节点的类型而有所不同：
+
+- 当 `ref` 属性用于 HTML 元素时，构造函数中使用 `React.createRef()` 创建的 `ref` 接收底层 DOM 元素作为其 `current` 属性。
+- 当 `ref` 属性用于自定义 class 组件时，`ref` 对象接收组件的挂载实例作为其 `current` 属性。
+- **不能在函数组件上使用 `ref` 属性**，因为他们没有实例。
+
+React 提供两种方法创建 Ref 对象，
+
+1. **类组件React.createRef**
+
+    ```js
+    class ClassComponent extends Component {
+      constructor(props) {
+        super(props);
+        this.currentDom = React.createRef(null);
+      }
+      componentDidMount() {
+        console.log("ClassComponent this.currentDom:", this.currentDom);
+        console.log("ClassComponent: ", this);
+      }
+      render() {
+        return <div ref={this.currentDom}>ClassComponent</div>;
+      }
+    }
+    ```
+
+    ![image-20220302101243856](https://s2.loli.net/2022/03/02/dXQBAhgrTMPz4i1.png)
+
+    React.createRef 的底层逻辑很简单:
+
+    ```js
+    export function createRef() {
+      const refObject = {
+        current: null,
+      }
+      return refObject;
+    }
+    ```
+
+    createRef 只做了一件事，就是创建了一个对象，对象上的 current 属性，用于保存通过 ref 获取的 DOM  元素，组件实例等。 createRef 一般用于类组件创建 Ref 对象，可以将 Ref 对象绑定在类组件实例上，这样更方便后续操作 Ref。
+
+    > 注意：不要在函数组件中使用 createRef，否则会造成 Ref 对象内容丢失等情况。
+
+2. **函数组件 useRef**
+
+    ```js
+    function FuncComponent() {
+      const currentDom = React.useRef(null);
+      useEffect(() => {
+        console.log("FuncComponent currentDom:", currentDom);
+      });
+
+      return <div ref={currentDom}>FuncComponent</div>;
+    }
+    ```
+
+    ![image-20220302101411955](https://s2.loli.net/2022/03/02/nY9OEUqMdS3T2bL.png)
+
+    useRef 底层逻辑是和 createRef 差不多，就是 **ref 保存位置不相同**
+
+    - 类组件有一个实例 instance 能够维护像 ref  这种信息，
+    - 但是由于函数组件每次更新都是一次新的开始，所有变量重新声明，所以 useRef 不能像 createRef 把 ref  对象直接暴露出去，如果这样每一次函数组件执行就会重新声明 Ref，此时 ref 就会随着函数组件执行被重置，这就解释了在函数组件中为什么不能用  createRef 的原因。
+
+    为了解决这个问题，hooks 和函数组件对应的 fiber 对象建立起关联，**将 useRef 产生的 ref 对象挂到函数组件对应的 fiber 上**，函数组件每次执行，只要组件不被销毁，函数组件对应的 fiber 对象一直存在，所以 ref 等信息就会被保存下来。
+
+#### 6.1.2 **React 对 Ref 属性的处理-标记 ref**
+
+首先明确一个问题是 **DOM 元素**和**组件实例** 必须用 ref 对象获取吗？答案是否定的，React 类组件提供了多种方法获取 **DOM 元素**和**组件实例**，说白了就是 React 对标签里面 ref 属性的处理逻辑多样化。
+
+- **类组件获取 Ref 三种方式**
+
+    1. **Ref属性是一个字符串** (已废弃)
+
+        ```js
+        class Children extends Component {
+          render = () => <div>hello,world</div>;
+        }
+
+        export class ClassComponent extends Component {
+          constructor(props) {
+            super(props);
+            this.currentDom = React.createRef(null);
+          }
+          componentDidMount() {
+            console.log("ClassComponent this.currentDom:", this.currentDom);
+            console.log("ClassComponent: ", this);
+          }
+
+          // 使用字符串 ref 属性被废弃
+          render = () => (
+            <div>
+              <div ref="currentDom">字符串模式获取元素或组件</div>
+              <Children ref="currentComInstance" />
+            </div>
+          );
+        }
+        ```
+
+        ![image-20220302101748508](https://s2.loli.net/2022/03/02/Rub7PFsNGYj2iqU.png)
+
+        如上面代码片段，用一个字符串 ref 标记一个 DOM 元素，一个类组件(函数组件没有实例，不能被 Ref 标记)。React  在底层逻辑，会判断类型，如果是 DOM 元素，会把真实 DOM 绑定在组件 this.refs (组件实例下的 refs  )属性上，如果是类组件，会把子组件的实例绑定在 this.refs 上。
+
+    2. **Ref 属性是一个函数。**
+
+        ```js
+        class Children extends Component {
+          render = () => <div>hello,world</div>;
+        }
+
+        export class ClassComponent extends Component {
+          constructor(props) {
+            super(props);
+            this.currentDom = React.createRef(null);
+          }
+          componentDidMount() {
+            console.log("ClassComponent this.currentDom:", this.currentDom);
+            console.log("ClassComponent: ", this);
+          }
+
+          // 2. Ref 属性是一个函数
+          render = () => (
+            <div>
+              <div ref={(node) => (this.currentDom = node)}>Ref模式获取元素或组件</div>
+              <Children ref={(node) => (this.currentComponentInstance = node)} />
+            </div>
+          );
+        }
+        ```
+
+        ![image-20220302102155650](https://s2.loli.net/2022/03/02/K76uR19NqgmXbj8.png)
+
+        如上代码片段，当用一个函数来标记 Ref 的时候，将作为 callback 形式，等到真实 DOM 创建阶段，执行 callback ，获取的 DOM 元素或组件实例，将以回调函数第一个参数形式传入，所以可以像上述代码片段中，用组件实例下的属性 `currentDom`和 `currentComponentInstance` 来接收真实 DOM 和组件实例。
+
+        > 这里的 `this.refs` 为一个空对象
+
+    3. **Ref 属性是一个ref对象** 即上面使用 `React.createRef()` 创建
+
+### 6.2 ref 高阶用法
+
+#### 6.2.1 forwardRef 转发 Ref
+
+forwardRef 的初衷就是解决 ref 不能跨层级捕获和传递的问题。 forwardRef 接受了父级元素标记的 ref 信息，并把它转发下去，使得子组件可以通过 props 来接受到上一层级或者是更上层级的ref。
+
+1. **场景一：跨层级获取**
+
+    比如想要通过标记子组件 ref ，来获取孙组件的某一 DOM 元素，或者是组件实例。
+
+    > 场景：想要在 GrandFather 组件通过标记 ref ，来获取孙组件 Son 的组件实例。
+
+    ```js
+    // 孙组件
+    function Son(props) {
+      const { grandRef } = props;
+      return (
+        <div>
+          <div> i am alien </div>
+          <span ref={grandRef}>这个是想要获取元素</span>
+        </div>
+      );
+    }
+
+    // 父组件
+    class Father extends React.Component {
+      constructor(props) {
+        super(props);
+      }
+      render() {
+        return (
+          <div>
+            <Son grandRef={this.props.grandRef} />
+          </div>
+        );
+      }
+    }
+
+    const NewFather = React.forwardRef((props, ref) => (
+      <Father grandRef={ref} {...props} />
+    ));
+
+    // 爷组件
+    export class GrandFather extends React.Component {
+      constructor(props) {
+        super(props);
+        this.grandSonDom = React.createRef(null);
+      }
+      node = null;
+      componentDidMount() {
+        console.log("GrandFather: ", this.node); // span #text 这个是想要获取元素
+        console.log("GrandFather's grandSomDom: ", this.grandSonDom); // span #text 这个是想要获取元素
+      }
+      render() {
+        return (
+          <div>
+            <NewFather ref={(node) => (this.node = node)} />
+            <NewFather ref={this.grandSonDom} />
+          </div>
+        );
+      }
+    }
+    ```
+
+    ![image-20220302103403898](https://s2.loli.net/2022/03/02/LczUy9Vf37TFDSk.png)
+
+    ```js
+    const NewFather = React.forwardRef((props, ref) => (
+      <Father grandRef={ref} {...props} />
+    ));
+    ```
+
+    forwardRef 把 ref 变成了可以通过 props 传递和转发
+
+    如果不添加 `forward` 转发，那么 `ref` 将会直接指向 Father 组件
+
+
+
+2. **场景二：合并转发 ref**
+
+    通过 forwardRef 转发的 ref 不要理解为只能用来直接获取组件实例，DOM 元素，也可以用来传递合并之后的自定义的 ref
+
+    > 场景：想通过Home绑定ref，来获取子组件Index的实例index，dom元素button，以及孙组件Form的实例
+
+    ```js
+    // 表单组件
+    class Form extends React.Component {
+      render() {
+        return <div>...</div>;
+      }
+    }
+    // index 组件
+    class Index extends React.Component {
+      componentDidMount() {
+        const { forwardRef } = this.props;
+        forwardRef.current = {
+          form: this.form, // 给form组件实例 ，绑定给 ref form属性
+          index: this, // 给index组件实例 ，绑定给 ref index属性
+          button: this.button, // 给button dom 元素，绑定给 ref button属性
+        };
+      }
+      form = null;
+      button = null;
+      render() {
+        return (
+          <div>
+            <button ref={(button) => (this.button = button)}>点击</button>
+            <Form ref={(form) => (this.form = form)} />
+          </div>
+        );
+      }
+    }
+    const ForwardRefIndex = React.forwardRef((props, ref) => (
+      <Index {...props} forwardRef={ref} />
+    ));
+    // home 组件
+    export function Home() {
+      const ref = useRef(null);
+      useEffect(() => {
+        console.log(ref.current);
+      }, []);
+      return <ForwardRefIndex ref={ref} />;
+    }
+    ```
+
+    ![image-20220302104721826](https://s2.loli.net/2022/03/02/lcH9VsXkf3NuGpg.png)
+
+    如上代码所示，流程主要分为几个方面：
+
+    - 1 通过 useRef 创建一个 ref 对象，通过 forwardRef 将当前 ref 对象传递给子组件。
+    - 2 向 Home 组件传递的 ref 对象上，绑定 form 孙组件实例，index 子组件实例，和 button DOM 元素。
+
+    `forwardRef` 让 ref 可以通过 props 传递，那么如果用 **ref 对象**标记的 ref ，那么 ref 对象就可以通过 props 的形式，提供给子孙组件消费，当然子孙组件也可以改变 ref  对象里面的属性，或者像如上代码中赋予新的属性，这种 forwardref  +  ref 模式一定程度上打破了 React  单向数据流动的原则。当然绑定在 ref 对象上的属性，不限于组件实例或者 DOM 元素，也可以是属性值或方法。
+
+3. **场景三：高阶组件转发**
+
+    如果通过高阶组件包裹一个原始类组件，就会产生一个问题，如果高阶组件 HOC 没有处理 ref ，那么由于高阶组件本身会返回一个新组件，所以当使用 HOC 包装后组件的时候，标记的 ref 会指向 HOC 返回的组件，而并不是 HOC  包裹的原始类组件，为了解决这个问题，forwardRef 可以对 HOC 做一层处理。
+
+    ```js
+    function HOC(Component) {
+      class Wrap extends React.Component {
+        render() {
+          const { forwardedRef, ...otherprops } = this.props;
+          return <Component ref={forwardedRef} {...otherprops} />;
+        }
+      }
+      return React.forwardRef((props, ref) => (
+        <Wrap forwardedRef={ref} {...props} />
+      ));
+    }
+
+    class IIndex extends React.Component {
+      render() {
+        return <div>hello,world</div>;
+      }
+    }
+    const HocIndex = HOC(IIndex);
+    export function HOCForward() {
+      const node = useRef(null);
+      useEffect(() => {
+        console.log("高阶组件转发:", node);
+      }, []);
+      return <HocIndex ref={node} />;
+    }
+    ```
+
+    ![image-20220302110955518](https://s2.loli.net/2022/03/02/ZTzs7BvlSEKxyjP.png)
+
+    经过 forwardRef 处理后的 HOC ，就可以正常访问到 Index 组件实例了
+
+    > 和跨层级转发相似
+
+
+
+#### 6.2.2 ref 实现组件通信
+
+如果有种场景不想通过父组件 render 改变 props 的方式，来触发子组件的更新，也就是子组件通过 state 单独管理数据层，针对这种情况父组件可以通过 ref 模式标记子组件实例，从而操纵子组件方法，这种情况通常发生在一些 **数据层托管** 的组件上，比如 `<Form/>` 表单，经典案例可以参考 antd 里面的 form 表单，暴露出对外的 `resetFields` ， `setFieldsValue` 等接口，可以通过表单实例调用这些 API 。
+
+1. **类组件 ref 相互通信**
+
+    对于类组件可以通过 ref 直接获取组件实例，实现组件通信。
+
+    ```js
+    /* 子组件 */
+    class SonCC extends React.PureComponent {
+      state = {
+        fatherMes: "",
+        sonMes: "",
+      };
+      fatherSay = (fatherMes) =>
+        this.setState({ fatherMes }); /* 提供给父组件的API */
+      render() {
+        const { fatherMes, sonMes } = this.state;
+        return (
+          <div className="sonbox">
+            <div className="title">子组件</div>
+            <p>父组件对我说：{fatherMes}</p>
+            <div className="label">对父组件说</div>{" "}
+            <input
+              onChange={(e) => this.setState({ sonMes: e.target.value })}
+              className="input"
+            />
+            <button
+              className="searchbtn"
+              onClick={() => this.props.toFather(sonMes)}
+            >
+              to father
+            </button>
+          </div>
+        );
+      }
+    }
+    /* 父组件 */
+    export function FatherCC() {
+      const [sonMes, setSonMes] = React.useState("");
+      const sonInstance = React.useRef(null); /* 用来获取子组件实例 */
+      const [fatherMes, setFatherMes] = React.useState("");
+      const toSon = () =>
+        sonInstance.current.fatherSay(
+          fatherMes
+        ); /* 调用子组件实例方法，改变子组件state */
+      return (
+        <div className="box">
+          <div className="title">父组件</div>
+          <p>子组件对我说：{sonMes}</p>
+          <div className="label">对子组件说</div>{" "}
+          <input onChange={(e) => setFatherMes(e.target.value)} className="input" />
+          <button className="searchbtn" onClick={toSon}>
+            to son
+          </button>
+          <SonCC ref={sonInstance} toFather={setSonMes} />
+        </div>
+      );
+    }
+    ```
+
+    ![image-20220302113005149](https://s2.loli.net/2022/03/02/h3GupMvqt4ZXD6r.png)
+
+2. **函数组件 forwardRef + useImperativeHandle 通信**
+
+    对于函数组件，本身是没有实例的，但是 React Hooks 提供了，useImperativeHandle 一方面第一个参数接受父组件传递的  ref 对象，另一方面第二个参数是一个函数，函数返回值，作为 ref 对象获取的内容。一起看一下 useImperativeHandle  的基本使用。
+
+    useImperativeHandle 接受三个参数：
+
+    - 第一个参数 ref : 接受 forWardRef 传递过来的 ref 。
+    - 第二个参数 createHandle ：处理函数，返回值作为暴露给父组件的 ref 对象。
+    - 第三个参数 deps :依赖项 deps，依赖项更改形成新的 ref 对象。
+
+    forwardRef + useImperativeHandle 可以完全让函数组件也能流畅的使用 Ref 通信。其原理图如下所示：
+
+    ![ref6.jpg](https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/59238390306849e89069e6a4bb6ded9d~tplv-k3u1fbpfcp-watermark.awebp)
+
+    ```js
+    function SonFC(props, ref) {
+      const inputRef = useRef(null);
+      const [inputValue, setInputValue] = useState("");
+      useImperativeHandle(
+        ref,
+        () => {
+          const handleRefs = {
+            onFocus() {
+              /* 声明方法用于聚焦input框 */
+              inputRef.current.focus();
+            },
+            onChangeValue(value) {
+              /* 声明方法用于改变input的值 */
+              setInputValue(value);
+            },
+          };
+          return handleRefs;
+        },
+        []
+      );
+      return (
+        <div>
+          <input placeholder="请输入内容" ref={inputRef} value={inputValue} />
+        </div>
+      );
+    }
+
+    const ForwardSonFC = React.forwardRef(SonFC);
+
+    export class ForwardSonFCContainer extends Component {
+      cur = null;
+      handleClick = () => {
+        const { onFocus, onChangeValue } = this.cur;
+        onFocus();
+        onChangeValue("lets learn react");
+      };
+      render() {
+        return (
+          <div style={{ marginTop: "50px" }}>
+            <ForwardSonFC ref={(cur) => (this.cur = cur)} />
+            <button onClick={this.handleClick}>操控子组件</button>
+          </div>
+        );
+      }
+    }
+    ```
+
+    ![useImperativeHandle](https://s2.loli.net/2022/03/03/Eh2yOpjXMoK31Ia.gif)
+
+    流程分析：
+
+    - 父组件用 ref 标记子组件，由于子组件 SonFC 是函数组件没有实例，所以用 forwardRef 转发 ref。
+    - 子组件 Son 用 useImperativeHandle 接收父组件 ref，将让 input 聚焦的方法 onFocus 和 改变 input 输入框的值的方法 onChangeValue 传递给 ref 。
+    - 父组件可以通过调用 ref 下的 onFocus 和 onChangeValue 控制子组件中 input 赋值和聚焦。
+
+    >
+
+3. **函数组件缓存数据**
+
+    函数组件每一次 render  ，函数上下文会重新执行，那么有一种情况就是，在执行一些事件方法改变数据或者保存新数据的时候，有没有必要更新视图，有没有必要把数据放到 state 中。如果视图层更新不依赖想要改变的数据，那么 state 改变带来的更新效果就是多余的。这时候更新无疑是一种性能上的浪费。
+
+    这种情况下，useRef 就派上用场了，上面讲到过，useRef 可以创建出一个 ref 原始对象，只要组件没有销毁，ref 对象就一直存在，那么完全可以把一些不依赖于视图更新的数据储存到 ref 对象中。这样做的好处有两个：
+
+    - 第一个能够直接修改数据，不会造成函数组件冗余的更新作用。
+    - 第二个 useRef 保存数据，如果有 useEffect ，useMemo 引用 ref 对象中的数据，无须将 ref 对象添加成 dep 依赖项，因为 useRef 始终指向一个内存空间，**所以这样一点好处是可以随时访问到变化后的值。**
+
+    ```jsx
+    const toLearn = [
+      { type: 1, mes: "let us learn React" },
+      { type: 2, mes: "let us learn Vue3.0" },
+    ];
+
+    export function FunctionComponentStoreData() {
+      const typeInfo = useRef(toLearn[0]);
+      const [id, setId] = useState(0);
+      const changeType = (info) => {
+        typeInfo.current = info; /* typeInfo 的改变，不需要视图变化 */
+      };
+      useEffect(() => {
+        if (typeInfo.current.type === 1) {
+          /* ... */
+          console.log("函数组件缓存数据 type=1 typeInfo:", typeInfo);
+        } else if (typeInfo.current.type === 2) {
+          /* ... */
+          console.log("函数组件缓存数据 type=2 typeInfo:", typeInfo);
+        }
+      }, [id]); /* 无须将 typeInfo 添加依赖项  */
+      return (
+        <div>
+          <h1>id:{id}</h1>
+          {toLearn.map((item) => (
+            <button key={item.type} onClick={changeType.bind(null, item)}>
+              {item.mes}
+            </button>
+          ))}
+          <br />
+          <button onClick={() => setId(id + 1)}>id++</button>
+        </div>
+      );
+    }
+    ```
+
+    ![函数组件缓存数据](https://s2.loli.net/2022/03/03/QnDYKZI8EUPh5Jq.gif)
+
+    设计思路：
+
+    - 用一个 useRef 保存 type 的信息，type 改变不需要视图变化。
+    - 按钮切换直接改变 useRef 内容。
+    - useEffect 里面可以直接访问到改变后的 typeInfo 的内容，不需要添加依赖项。
+
+### 6.3 ref 原理
+
+对于 Ref 标签引用，React 是如何处理的呢？ 接下来先来看看一段 demo 代码 （称之为 DemoRef :
+
+```jsx
+export class DemoRef extends Component {
+  state = { num: 0 };
+  node = null;
+  render() {
+    return (
+      <div>
+        <div
+          ref={(node) => {
+            this.node = node;
+            console.log("此时的参数是什么: ", this.node);
+          }}
+        >
+          ref元素节点
+        </div>
+        <button onClick={() => this.setState({ num: this.state.num + 1 })}>
+          点击
+        </button>
+      </div>
+    );
+  }
+}
+```
+
+用回调函数方式处理 Ref ，**如果点击一次按钮，会打印几次 console.log ？**
+
+![demoRef点击](https://s2.loli.net/2022/03/03/VTL2eHzrBUQN7mY.gif)
+
+此时加载完毕后后首先打印一次 `console.log`
+
+然后点击按钮，会首先打印一次 `null` ，然后再打印一次 ref 指向的节点
+
+这样的原因和意义？
+
+#### 6.3.1 **ref 执行时机和处理逻辑**
+
+**React 将在组件挂载时，会调用 `ref` 回调函数并传入 DOM 元素(这里解释了为什么加载完成后也打印了节点)，当卸载时调用它并传入 `null`。在 `componentDidMount` 或 `componentDidUpdate` 触发前，React 会保证 refs 一定是最新的。**
+
+在生命周期中，提到了一次更新的两个阶段- render 阶段和 commit 阶段，后面的 fiber 章节会详细介绍两个阶段。**对于整个  Ref 的处理，都是在 commit 阶段发生的**。之前了解过 commit 阶段会进行真正的 Dom 操作，此时 ref 就是用来获取真实的  DOM 以及组件实例的，所以需要 commit 阶段处理。
+
+但是对于 Ref 处理函数，React 底层用两个方法处理：**commitDetachRef(DOM 更新之前)**  和 **commitAttachRef(DOM 更新之后)** ，上述两次 console.log 一次为 null，一次为div 就是分别调用了上述的方法。
+
+这两次正正好好，一次在 DOM 更新之前，一次在 DOM 更新之后。
+
+- 第一阶段：一次更新中，在 commit 的 mutation 阶段, 执行commitDetachRef，commitDetachRef 会清空之前ref值，使其重置为 null。
+
+    **置空的原因在于：先置空，防止在一次更新中，fiber节点卸载了，但是 ref 引用没有卸载，指向了原来的元素或者组件** [ref 先置空原因](https://github.com/facebook/react/issues/9328#issuecomment-292029340)
+
+    结合源码：
+
+    ```js
+    // react-reconciler/src/ReactFiberCommitWork.js
+
+    function commitDetachRef(current: Fiber) {
+      const currentRef = current.ref;
+      if (currentRef !== null) {
+        if (typeof currentRef === 'function') { /* function 和 字符串获取方式。 */
+          currentRef(null);
+        } else {   /* Ref对象获取方式 */
+          currentRef.current = null;
+        }
+      }
+    }
+    ```
+
+- 第二阶段：DOM 更新阶段，这个阶段会根据不同的 effect 标签，真实的操作 DOM 。
+
+- 第三阶段：layout 阶段，在更新真实元素节点之后，此时需要更新 ref 。
+
+    ```js
+    // react-reconciler/src/ReactFiberCommitWork.js
+
+    function commitAttachRef(finishedWork: Fiber) {
+      const ref = finishedWork.ref;
+      if (ref !== null) {
+        const instance = finishedWork.stateNode;
+        let instanceToUse;
+        switch (finishedWork.tag) {
+          case HostComponent: //元素节点 获取元素
+            instanceToUse = getPublicInstance(instance);
+            break;
+          default:  // 类组件直接使用实例
+            instanceToUse = instance;
+        }
+        if (typeof ref === 'function') {
+          ref(instanceToUse);  //* function 和 字符串获取方式。 */
+        } else {
+          ref.current = instanceToUse; /* ref对象方式 */
+        }
+      }
+    }
+    ```
+
+    这一阶段，主要判断 ref 获取的是组件还是 DOM 元素标签，如果 DOM 元素，就会获取更新之后最新的 DOM 元素。上面流程中讲了三种获取 ref 的方式。 **如果是字符串 ref="node" 或是 函数式 `ref={(node)=> this.node = node }` 会执行 ref 函数，重置新的 ref** 。
+
+    如果是 ref 对象方式。
+
+    ```js
+    node = React.createRef()
+    <div ref={ node } ></div>
+    ```
+
+    会更新 ref 对象的 current 属性。达到更新 ref 对象的目的。
+
+    > 但是为什么 `ref="node"` 字符串，最后会按照函数方式处理呢？
+    >
+    > 是因为当 ref 属性是一个字符串的时候，React 会自动绑定一个函数，用来处理 ref 逻辑
+    >
+    > ```js
+    > // react-reconciler/src/ReactChildFiber.js
+    >
+    > const ref = function(value) {
+    >     let refs = inst.refs;
+    >     if (refs === emptyRefsObject) {
+    >         refs = inst.refs = {};
+    >     }
+    >     if (value === null) {
+    >         delete refs[stringRef];
+    >     } else {
+    >         refs[stringRef] = value;
+    >     }
+    > };
+    > ```
+    >
+    > 所以当这样绑定ref="node"，会被绑定在组件实例的refs属性下面。比如
+    >
+    > ```js
+    > <div ref="node" ></div>
+    > ```
+    >
+    > ref 函数 在 commitAttachRef 中最终会这么处理：
+    >
+    > ```js
+    > ref(<div>)
+    > 等于 inst.refs.node = <div>
+    > ```
+
+#### 6.3.2 ref 的处理特性
+
+React 中被 ref 标记的 fiber，那么每一次 fiber 更新都会调用 **commitDetachRef**  和 **commitAttachRef** 更新 Ref 吗 ？
+
+**答案是否定的，只有在 ref 更新的时候，才会调用如上方法更新 ref ，究其原因还要从如上两个方法的执行时期说起**
+
+#### 6.3.3 更新 ref
+
+在 commit 阶段 commitDetachRef 和 commitAttachRef 是在什么条件下被执行的呢 ？
+
+**`commitDetachRef` 调用时机**
+
+```js
+// react-reconciler/src/ReactFiberWorkLoop.js
+
+function commitMutationEffects(){
+     if (effectTag & Ref) {
+      const current = nextEffect.alternate;
+      if (current !== null) {
+        commitDetachRef(current);
+      }
+    }
+}
+```
+
+**`commitAttachRef` 调用时机**
+
+```js
+function commitLayoutEffects(){
+     if (effectTag & Ref) {
+      commitAttachRef(nextEffect);
+    }
+}
+```
+
+从上可以清晰的看到只有含有 `Ref` tag 的时候，才会执行更新 ref，那么是每一次更新都会打 `Ref` tag 吗？
+
+```js
+// react-reconciler/src/ReactFiberBeginWork.js
+
+function markRef(current: Fiber | null, workInProgress: Fiber) {
+  const ref = workInProgress.ref;
+  if (
+    (current === null && ref !== null) ||      // 初始化的时候
+    (current !== null && current.ref !== ref)  // ref 指向发生改变
+  ) {
+    workInProgress.effectTag |= Ref;
+  }
+}
+```
+
+首先 `markRef` 方法执行在两种情况下：
+
+- **第一种就是类组件的更新过程中**。
+- 第二种就是更新 `HostComponent` 的时候，什么是 HostComponent 就不必多说了，比如 `<div />` 等元素。
+
+`markRef` 会在以下两种情况下给 effectTag 标记 Ref，只有标记了 Ref tag 才会有后续的 `commitAttachRef` 和 `commitDetachRef` 流程。（ current 为当前调和的 fiber 节点 ）
+
+- 第一种` current === null && ref !== null`：就是在 fiber 初始化的时候，第一次 ref 处理的时候，是一定要标记 Ref 的。
+- 第二种` current !== null && current.ref !== ref`：就是 fiber 更新的时候，但是 ref 对象的指向变了。
+
+只有在 Ref tag 存在的时候才会更新 ref ，那么回到最初的 **DemoRef** 上来，为什么每一次按钮，都会打印 ref ，那么也就是 ref 的回调函数执行了，ref 更新了。
+
+```js
+<div ref={(node)=>{
+               this.node = node
+               console.log('此时的参数是什么：', this.node )
+}}  >ref元素节点</div>
+```
+
+如上很简单，**每一次更新的时候(执行 render 后面dom变化)，都给 ref 赋值了新的函数**，那么 `markRef` 中就会判断成 `current.ref !== ref`，所以就会重新打 Ref 标签，那么在 commit 阶段，就会更新 ref 执行 ref 回调函数了。
+
+如果给 **DemoRef** 做如下修改：
+
+```jsx
+export class DemoRef2 extends Component {
+  state = { num: 0 };
+  node = null;
+  getDom = (node) => {
+    this.node = node;
+    console.log("此时的参数是什么: ", this.node);
+  };
+  render() {
+    return (
+      <div>
+        <div ref={this.getDom}>ref元素节点</div>
+        <button onClick={() => this.setState({ num: this.state.num + 1 })}>
+          点击
+        </button>
+      </div>
+    );
+  }
+}
+```
+
+这个时候，在点击按钮更新的时候，由于此时 ref 指向相同的函数 `getDom` ，所以就不会打 Ref 标签，不会更新 ref 逻辑，直观上的体现就是 `getDom` 函数不会再执行。
+
+#### 6.3.4 卸载 ref
+
+当组件或者元素卸载的时候，ref 的处理逻辑是怎么样的。
+
+```js
+// react-reconciler/src/ReactFiberCommitWork.js
+this.state.isShow && <div ref={()=>this.node = node} >元素节点</div>
+```
+
+如上，在一次更新的时候，改变 `isShow` 属性，使之由 `true` 变成了 `false`， 那么 `div` 元素会被卸载，那么 ref 会怎么处理呢？
+
+被卸载的 fiber 会被打成 `Deletion` effect tag ，然后在 commit 阶段会进行 commitDeletion 流程。对于有 ref 标记的 ClassComponent （类组件） 和 HostComponent （元素），会统一走 `safelyDetachRef` 流程，这个方法就是用来卸载 ref。
+
+```js
+// react-reconciler/src/ReactFiberCommitWork.js
+
+function safelyDetachRef(current) {
+  const ref = current.ref;
+  if (ref !== null) {
+    if (typeof ref === 'function') {  // 函数式 ｜ 字符串
+        ref(null)
+    } else {
+      ref.current = null;  // ref 对象
+    }
+  }
+}
+```
+
+- 对于字符串 `ref="dom"` 和函数类型 `ref={(node)=> this.node = node }` 的 ref，会执行传入 null 置空 ref 。
+- 对于 ref 对象类型，会清空 ref 对象上的 current 属性。
+
+借此完成卸载 ref 流程。
+
+![image-20220303131152702](https://s2.loli.net/2022/03/03/IvPx6KX2NsfOgzU.png)
