@@ -2,6 +2,8 @@
 
 [toc]
 
+[React 进阶实践](https://juejin.cn/book/6945998773818490884)
+
 ## 1. JSX
 
 ### 1.1 JSX 最终变成什么
@@ -1319,7 +1321,7 @@ function updateClassComponent(){
     if (instance === null) {
         constructClassInstance(workInProgress, Component, nextProps); // 组件实例将在这个方法中被new。
         // 初始化挂载组件流程
-        mountClassInstance(workInProgress, Component, nextProps,renderExpirationTime );
+        mountClassInstance(workInProgress, Component, nextProps, renderExpirationTime );
         shouldUpdate = true; // shouldUpdate 标识用来证明 组件是否需要更新。
     }else{
         shouldUpdate = updateClassInstance(current, workInProgress,
@@ -1328,19 +1330,19 @@ function updateClassComponent(){
 
     if(shouldUpdate){
         nextChildren = instance.render(); /* 执行render函数 ，得到子节点 */
-        reconcileChildren(current,workInProgress,nextChildren,renderExpirationTime) /* 继续调和子节点 */
+        reconcileChildren(current, workInProgress, nextChildren, renderExpirationTime) /* 继续调和子节点 */
     }
 }
 ```
 
 几个重要概念：
 
-- ①  `instance` 类组件对应实例。
-- ②  `workInProgress` 树，当前正在调和(render)的 fiber 树 ，一次更新中，React 会自上而下深度遍历子代 fiber ，如果遍历到一个 fiber ，会把当前 fiber 指向 workInProgress。
-- ③  `current` 树，在初始化更新中，current = null ，在第一次 fiber 调和之后，会将  workInProgress 树赋值给 current 树。React 来用workInProgress 和 current  来确保一次更新中，快速构建，并且状态不丢失。
-- ④  `Component` 就是项目中的 class 组件。
-- ⑤  `nextProps` 作为组件在一次更新中新的 props 。
-- ⑥  `renderExpirationTime` 作为下一次渲染的过期时间。
+- ①   `instance` 类组件对应实例。
+- ②   `workInProgress` 树，当前正在调和(render)的 fiber 树 ，一次更新中，React 会自上而下深度遍历子代 fiber ，如果遍历到一个 fiber ，会把当前 fiber 指向 workInProgress。
+- ③   `current` 树，在初始化更新中，current = null ，在第一次 fiber 调和之后，会将  workInProgress 树赋值给 current 树。React 来用workInProgress 和 current  来确保一次更新中，快速构建，并且状态不丢失。
+- ④   `Component` 就是项目中的 class 组件。
+- ⑤   `nextProps` 作为组件在一次更新中新的 props 。
+- ⑥   `renderExpirationTime` 作为下一次渲染的过期时间。
 
 在组件实例上可以通过 `_reactInternals` 属性来访问组件对应的 fiber 对象。在 fiber 对象上，可以通过 `stateNode` 来访问当前 fiber 对应的组件实例:
 
@@ -1409,12 +1411,12 @@ React 的大部分生命周期的执行，都在 **`mountClassInstance` 和 `upd
         // react-reconciler/src/ReactFiberCommitWork.js
 
         function commitLifeCycles(finishedRoot,current,finishedWork){
-            switch (finishedWork.tag){       /* fiber tag 在第一节讲了不同fiber类型 */
+            switch (finishedWork.tag) {       /* fiber tag 在第一节讲了不同fiber类型 */
                 case ClassComponent: {                              /* 如果是 类组件 类型 */
                     const instance = finishedWork.stateNode        /* 类实例 */
-                    if(current === null){                          /* 类组件第一次调和渲染 */
+                    if(current === null) {                          /* 类组件第一次调和渲染 */
                         instance.componentDidMount()
-                    }else{                                         /* 类组件更新 */
+                    } else {                                         /* 类组件更新 */
                         instance.componentDidUpdate(prevProps,prevState，
                                                     instance.__reactInternalSnapshotBeforeUpdate);
                     }
@@ -1615,9 +1617,9 @@ React 的大部分生命周期的执行，都在 **`mountClassInstance` 和 `upd
 
     这三个生命周期，都是在 render 之前执行的，React 对于执行 render 函数有着像 shouldUpdate  等条件制约，但是**对于执行在 render 之前生命周期没有限制，存在一定隐匿风险**，如果 updateClassInstance  执行多次，React 开发者滥用这几个生命周期，可能导致生命周期内的上下文多次被执行。
 
-4. **`componentWillRecieveProps` 和 `UNSAFE_componentWillRecieveProps`**
+4. **`UNSAFE_componentWillRecieveProps`**
 
-    UNSAFE_componentWillReceiveProps 函数的执行是在更新组件阶段，该生命周期执行驱动是因为父组件更新带来的  props 修改，但是只要父组件触发 render 函数，调用 React.createElement 方法，那么 props  就会被重新创建，生命周期 componentWillReceiveProps 就会执行了。这就解释了即使 props 没变，该生命周期也会执行。
+    UNSAFE_componentWillReceiveProps 函数的执行是在更新组件阶段，该生命周期执行驱动是因为父组件更新带来的  props 修改，**但是只要父组件触发 render 函数，调用 React.createElement 方法，那么 props  就会被重新创建，生命周期 componentWillReceiveProps 就会执行了。这就解释了即使 props 没变，该生命周期也会执行。**
 
     **作用：**
 
@@ -1801,7 +1803,7 @@ React hooks也提供了 api ，用于弥补函数组件没有生命周期的缺�
 
 4. **`componentWillReceiveProps` 代替方案**
 
-    useEffect 代替 componentWillReceiveProps 比较牵强：
+    **useEffect 代替 componentWillReceiveProps 比较牵强**：
 
     - **首先因为二者的执行阶段根本不同，一个是在render阶段，一个是在commit阶段**
     - 其次 **useEffect 会初始化执行一次**，但是 componentWillReceiveProps 只有组件更新 props 变化的时候才会执行
@@ -1903,7 +1905,7 @@ React 提供两种方法创建 Ref 对象，
 
     createRef 只做了一件事，就是创建了一个对象，对象上的 current 属性，用于保存通过 ref 获取的 DOM  元素，组件实例等。 createRef 一般用于类组件创建 Ref 对象，可以将 Ref 对象绑定在类组件实例上，这样更方便后续操作 Ref。
 
-    > 注意：不要在函数组件中使用 createRef，否则会造成 Ref 对象内容丢失等情况。
+    > **注意：不要在函数组件中使用 createRef，否则会造成 Ref 对象内容丢失等情况**
 
 2. **函数组件 useRef**
 
@@ -2074,6 +2076,12 @@ forwardRef 的初衷就是解决 ref 不能跨层级捕获和传递的问题。 
     forwardRef 把 ref 变成了可以通过 props 传递和转发
 
     如果不添加 `forward` 转发，那么 `ref` 将会直接指向 Father 组件
+
+    如果直接使用一个 `grandRef` 的 `props` 也能实现
+
+    ```jsx
+    <FatherB grandRef={this.grandSon} />
+    ```
 
 
 
@@ -2307,8 +2315,6 @@ forwardRef 的初衷就是解决 ref 不能跨层级捕获和传递的问题。 
     - 子组件 Son 用 useImperativeHandle 接收父组件 ref，将让 input 聚焦的方法 onFocus 和 改变 input 输入框的值的方法 onChangeValue 传递给 ref 。
     - 父组件可以通过调用 ref 下的 onFocus 和 onChangeValue 控制子组件中 input 赋值和聚焦。
 
-    >
-
 3. **函数组件缓存数据**
 
     函数组件每一次 render  ，函数上下文会重新执行，那么有一种情况就是，在执行一些事件方法改变数据或者保存新数据的时候，有没有必要更新视图，有没有必要把数据放到 state 中。如果视图层更新不依赖想要改变的数据，那么 state 改变带来的更新效果就是多余的。这时候更新无疑是一种性能上的浪费。
@@ -2423,7 +2429,7 @@ export class DemoRef extends Component {
       const currentRef = current.ref;
       if (currentRef !== null) {
         if (typeof currentRef === 'function') { /* function 和 字符串获取方式。 */
-          currentRef(null);
+          currentRef(null); // 执行 ref 函数
         } else {   /* Ref对象获取方式 */
           currentRef.current = null;
         }
@@ -2472,21 +2478,21 @@ export class DemoRef extends Component {
 
     > 但是为什么 `ref="node"` 字符串，最后会按照函数方式处理呢？
     >
-    > 是因为当 ref 属性是一个字符串的时候，React 会自动绑定一个函数，用来处理 ref 逻辑
+    > 是因为**当 ref 属性是一个字符串的时候，React 会自动绑定一个函数**，用来处理 ref 逻辑
     >
     > ```js
     > // react-reconciler/src/ReactChildFiber.js
     >
     > const ref = function(value) {
-    >     let refs = inst.refs;
-    >     if (refs === emptyRefsObject) {
-    >         refs = inst.refs = {};
-    >     }
-    >     if (value === null) {
-    >         delete refs[stringRef];
-    >     } else {
-    >         refs[stringRef] = value;
-    >     }
+    >  let refs = inst.refs;
+    >  if (refs === emptyRefsObject) {
+    >      refs = inst.refs = {};
+    >  }
+    >  if (value === null) {
+    >      delete refs[stringRef];
+    >  } else {
+    >      refs[stringRef] = value;
+    >  }
     > };
     > ```
     >
@@ -2519,11 +2525,11 @@ React 中被 ref 标记的 fiber，那么每一次 fiber 更新都会调用 **co
 // react-reconciler/src/ReactFiberWorkLoop.js
 
 function commitMutationEffects(){
-     if (effectTag & Ref) {
-      const current = nextEffect.alternate;
-      if (current !== null) {
-        commitDetachRef(current);
-      }
+    if (effectTag & Ref) {
+        const current = nextEffect.alternate;
+        if (current !== null) {
+            commitDetachRef(current);
+        }
     }
 }
 ```
@@ -2532,8 +2538,8 @@ function commitMutationEffects(){
 
 ```js
 function commitLayoutEffects(){
-     if (effectTag & Ref) {
-      commitAttachRef(nextEffect);
+    if (effectTag & Ref) {
+        commitAttachRef(nextEffect);
     }
 }
 ```
@@ -2584,7 +2590,7 @@ export class DemoRef2 extends Component {
   getDom = (node) => {
     this.node = node;
     console.log("此时的参数是什么: ", this.node);
-  };
+  }; // ref 每次都指向同一个函数
   render() {
     return (
       <div>
@@ -2634,3 +2640,568 @@ function safelyDetachRef(current) {
 借此完成卸载 ref 流程。
 
 ![image-20220303131152702](https://s2.loli.net/2022/03/03/IvPx6KX2NsfOgzU.png)
+
+## 7. 提供者 context
+
+首先来思考为什么 React 会提供 context 的 API 呢？
+
+带着这个疑问，首先假设一个场景：在 React 的项目有一个全局变量 theme（ theme  可能是初始化数据交互获得的，也有可能是切换主题变化的），有一些视图 UI 组件（比如表单 input 框、button 按钮），需要 theme 里面的变量来做对应的视图渲染，现在的问题是怎么能够把 theme 传递下去，合理分配到**用到这个 theme** 的地方。
+
+那么，首先想到的是 **props 的可行性**，如果让 props  来解决上述问题可以是可以，不过会有两个问题。假设项目的组件树情况如下图所示，因为在设计整个项目的时候，不确定将来哪一个模块需要 theme  ，所以必须将 theme 在根组件 A 注入，但是需要给组件 N 传递 props ，需要在上面每一层都去手动绑定 props  ，如果将来其他子分支上有更深层的组件需要 theme ，还需要把上一级的组件全部绑定传递 props ，这样维护成本是巨大的。
+
+假设需要动态改变 theme ，那么需要从根组件更新，只要需要 theme 的组件，由它开始到根组件的一条组件链结构都需要更新，会造成牵一发动全身的影响。props 方式看来不切实际。
+
+![image-20220304100300984](https://s2.loli.net/2022/03/04/V2mRP3dCeolfc4i.png)
+
+为了解决上述 props  传递的两个问题，React提供了 `context` 上下文 模式，具体模式是这样的，React组件树A节点，用Provider提供者注入theme，然后在需要theme的地方，用 Consumer 消费者形式取出theme，供给组件渲染使用即可，这样减少很多无用功。用官网上的一句话形容就是Context  提供了一个无需为每层组件手动添加 props，就能在组件树间进行数据传递的方法。
+
+但是必须注意一点是，**提供者永远要在消费者上层**，正所谓水往低处流，提供者一定要是消费者的某一层父级。
+
+### 7.1 老版本的 context
+
+在`v16.3.0`之前，React 用 PropTypes 来声明 context 类型，提供者需要 getChildContext 来返回需要提供的 context ，并且用静态属性  childContextTypes 声明需要提供的 context 数据类型。具体如下
+
+- **老版本提供者**
+
+    ```jsx
+    import React, { Component } from "react";
+    import PropTypes from "prop-types";
+
+    export class ProviderDemo extends Component {
+      static childContextTypes = {
+        theme: PropTypes.object,
+      };
+      getChildContext() {
+        // 提供者要提供的主题颜色，供消费者消费
+        const theme = {
+          color: "#ccc",
+          background: "pink",
+        };
+        return theme;
+      }
+      render() {
+        return <div>hello, let us learn React!</div>;
+      }
+    }
+    ```
+
+    老版本 api 在 v16 版本还能正常使用，对于提供者，需要通过 getChildContext 方法，将传递的 theme 信息返回出去，并通过 childContextTypes 声明要传递的 theme 是一个对象结构。声明类型需要`propsTypes`库来助力。
+
+- **老版本消费者**
+
+    ```jsx
+    // 老版本消费者
+    class ConsumerDemo extends React.Component {
+      static contextTypes = {
+        theme: PropTypes.object,
+      };
+      render() {
+        console.log(this.context.theme); // {  color:'#ccc',  bgcolor:'pink' }
+        const { color, background } = this.context.theme;
+        return <div style={{ color, background }}>消费者</div>;
+      }
+    }
+
+    export const Son = () => <ConsumerDemo />;
+    ```
+
+    ![image-20220304101231862](https://s2.loli.net/2022/03/04/oB4KnprgsvFHcAC.png)
+
+    作为消费者，需要在组件的静态属性指明我到底需要哪个提供者提供的状态，在 demo 项目中，ConsumerDemo 的 contextTypes 明确的指明了需要 ProviderDemo 提供的 theme信息，然后就可以通过 this.context.theme 访问到 theme  ，用做渲染消费。
+
+    这种模式和 vue 中的 provide 和 inject 数据传输模式很像，在提供者中声明到底传递什么，然后消费者指出需要哪个提供者提供的  context  。打个比方，就好比去一个高档餐厅，每一个厨师都可以理解成一个提供者，而且每个厨师各有所长，有的擅长中餐，有的擅长西餐，每个厨师都把擅长的用 `childContextTypes` 贴出来，你作为消费者，用 `contextTypes` 明确出想要吃哪个厨师做的餐饮，借此做到物尽所需。
+
+### 7.2 新版本 context 基本使用
+
+上述的 API 用起来流程可能会很繁琐，而且还依赖于 propsTypes 等第三方库。所以 `v16.3.0` 之后，context api 正式发布了，所以可以直接用 createContext 创建出一个 context 上下文对象，context 对象提供两个组件，`Provider`和 `Consumer`作为新的提供者和消费者，这种 context 模式，更便捷的传递 context ，还增加了一些新的特性，但是也引出了一些新的问题。
+
+1. **createContext**
+
+    ```jsx
+    const ThemeContext = React.createContext(null);
+    const ThemeProvider = ThemeContext.Provider; // 提供者
+    const ThemeConsumer = ThemeContext.Consumer; // 订阅消费者
+    ```
+
+    createContext 接受一个参数，作为初始化 context 的内容，返回一个context 对象，Context 对象上的 Provider 作为提供者，Context 对象上的 Consumer 作为消费者。
+
+2. **新版本提供者**
+
+    ```jsx
+    const ThemeProvider = ThemeContext.Provider;
+    export function ProviderDemo() {
+      const [contextValue, setContextValue] = React.useState({
+        color: "#ccc",
+        background: "pink",
+      });
+      return (
+        <div>
+          <ThemeProvider value={contextValue}>
+            <Son />
+          </ThemeProvider>
+        </div>
+      );
+    }
+    ```
+
+    provider 作用有两个：
+
+    - value 属性传递 context，供给 Consumer 使用。
+    - value 属性改变，ThemeProvider 会让消费 Provider value 的组件重新渲染。
+
+3. **新版本消费者**
+
+    对于新版本想要获取 context 的消费者，React 提供了3种形式
+
+    1. **类组件 contextType 方式**
+
+        `React v16.6` 提供了 contextType 静态属性，用来获取上面 Provider 提供的 value 属性，这里注意的是 contextType ，不是上述老版的contextTypes, 对于 React 起的这两个名字，真是太相像了。
+
+        ```jsx
+        // 1. 类组件 - contextType 方式
+        export class ConsumerDemo1 extends React.Component {
+          render() {
+            const { color, background } = this.context;
+            return <div style={{ color, background }}>消费者</div>;
+          }
+        }
+        ```
+
+        - 类组件的静态属性上的 contextType 属性，指向需要获取的 context（ demo 中的 ThemeContext ），就可以方便获取到最近一层 Provider 提供的 contextValue 值。
+        - 记住这种方式只适用于类组件。
+
+    2. **函数组件 useContext 方式**
+
+        v16.8 React hooks 提供了 `useContext`
+
+        ```jsx
+        const ThemeContext = React.createContext(null);
+
+        function ConsumerDemo2() {
+          const contextValue = React.useContext(ThemeContext);
+          const { color, background } = contextValue;
+          return <div style={{ color, background }}>消费者</div>;
+        }
+        ```
+
+        useContext 接受一个参数，就是想要获取的 context ，返回一个 value 值，就是最近的 provider 提供 contextValue 值。
+
+    3. **订阅者 Consumer 方式**
+
+        React 还提供了一种 Consumer 订阅消费者方式
+
+        ```jsx
+        function ConsumerDemo3({ color, background }) {
+          return <div style={{ color, background }}>消费者</div>;
+        }
+
+        const Son3 = () => {
+          <ThemeConsumer>
+            {/* 将 context 内容转化成 props  */}
+            {(contextValue) => <ConsumerDemo3 {...contextValue} />}
+          </ThemeConsumer>;
+        };
+        ```
+
+        Consumer 订阅者采取 render props 方式，接受最近一层 provider 中value 属性，作为 render props 函数的参数，可以将参数取出来，作为 props 混入 `ConsumerDemo` 组件，说白了就是 context 变成了 props。
+
+4. **动态 context**
+
+    上面讲到的 context 都是静态的，不变的，但是实际的场景下，context 可能是动态的，可变的，比如说回到了本章节最开始的话题切换主题，因为切换主题就是在动态改变 context 的内容。所以接下来看一下动态改变 context 。
+
+    ```jsx
+    import React, { useContext, useState } from "react";
+
+    const ThemeContext = React.createContext(null);
+
+    function ConsumerDemo() {
+      const { color, background } = useContext(ThemeContext);
+      return <div style={{ color, background }}>消费者</div>;
+    }
+    const Son = React.memo(() => {
+      console.log("son render");
+      return <ConsumerDemo />;
+    });
+    Son.displayName = "son";
+
+    export function ProviderDemo() {
+      const [contextValue, setContextValue] = useState({
+        color: "#ccc",
+        background: "pink",
+      });
+
+      return (
+        <div>
+          <ThemeContext.Provider value={contextValue}>
+            <Son />
+          </ThemeContext.Provider>
+          <button
+            onClick={() => setContextValue({ color: "#fff", background: "blue" })}
+          >
+            切换主题
+          </button>
+        </div>
+      );
+    }
+    ```
+
+    ![动态context](https://s2.loli.net/2022/03/04/wc7ABP3sniK9ryY.gif)
+
+    Provider 模式下 context 有一个显著的特点，就是 **Provder 的 value 改变，会使所有消费 value 的组件重新渲染**，如上通过一个 useState 来改变 contextValue 的值，contextValue 改变，会使 ConsumerDemo  自动更新，注意这个更新并不是由父组件 son render 造成的，因为给 son 用 memo 处理过，这种情况下，Son 没有触发  render，而是 ConsumerDemo 自发的render。
+
+    **总结：在 Provider 里 value 的改变，会使引用`contextType`,`useContext` 消费该 context 的组件重新 render ，同样会使 Consumer 的 children 函数重新执行，与前两种方式不同的是 Consumer 方式，当 context 内容改变的时候，不会让引用 Consumer 的父组件重新更新。**
+
+    **上面暴露的问题**
+
+    但是上述的 demo 暴露出一个问题，就是在上述 son 组件是用 memo 处理的，如果没有 memo 处理，useState 会让 `ProviderDemo` 重新 render ，此时 son 没有处理，就会跟随父组件 render ，问题是如果 son 还有很多子组件，那么全部 render 一遍。那么**如何阻止 Provider value 改变造成的 children （ demo 中的 Son ）不必要的渲染？**
+
+    - ①  第一种就是利用 memo，pureComponent 对子组件 props 进行浅比较处理
+
+        ```jsx
+        const Son = React.memo(()=> <ConsumerDemo />)
+        ```
+
+    - ②  第二种就是 React 本身对 React element 对象的缓存。React 每次执行 render 都会调用  createElement 形成新的 React element 对象，如果把 React element  缓存下来，下一次调和更新时候，就会跳过该 React element 对应 fiber 的更新。
+
+        ```jsx
+        {React.useMemo(() => {
+            console.log("use memo render");
+            return <ConsumerDemo  />;
+        }, [])}
+        ```
+
+
+
+5. **其他 api**
+
+    1. **displayName**
+
+        context 对象接受一个名为 `displayName` 的 property，类型为字符串。React DevTools 使用该字符串来确定 context 要显示的内容。
+
+        ```jsx
+        const ThemeContext = React.createContext(null);
+        ThemeContext.displayName = "dynamic theme context";
+        ```
+
+        ![image-20220304105855268](https://s2.loli.net/2022/03/04/Zb62VIq5SBTNuDx.png)
+
+- **context 与 props 和 react-redux 的对比？**
+
+    context 解决了
+
+    - 解决了 props 需要每一层都手动添加 props 的缺陷。
+    - 解决了改变 value ，组件全部重新渲染的缺陷。
+
+    react-redux 就是通过 Provider 模式把 redux 中的 store 注入到组件中的。
+
+### 7.3 context 高阶用法
+
+#### 7.3.1 嵌套 Provider
+
+多个 Provider 之间可以相互嵌套，来保存/切换一些全局数据：
+
+```jsx
+const ThemeContext = React.createContext(null);
+const LanContext = React.createContext(null);
+
+function ConsumerDemo() {
+  return (
+    <ThemeContext.Consumer>
+      {(themeContextValue) => {
+        return (
+          <LanContext.Consumer>
+            {(lanContextValue) => {
+              const { color, background } = themeContextValue;
+              return (
+                <div style={{ color, background }}>
+                  {lanContextValue === "CH"
+                    ? "大家好, 让我们一起学习React!"
+                    : "Hello, let us learn React!"}
+                </div>
+              );
+            }}
+          </LanContext.Consumer>
+        );
+      }}
+    </ThemeContext.Consumer>
+  );
+}
+
+const Son = React.memo(() => <ConsumerDemo />);
+Son.displayName = "Son";
+
+export function ProviderDemo() {
+  const [themeContextValue, setThemeContextValue] = useState({
+    color: "#FFF",
+    background: "blue",
+  });
+  const [lanContextValue, setLanContextValue] = React.useState("CH"); // CH -> 中文 ， EN -> 英文
+
+  return (
+    <div>
+      <ThemeContext.Provider value={themeContextValue}>
+        <LanContext.Provider value={lanContextValue}>
+          <Son />
+        </LanContext.Provider>
+      </ThemeContext.Provider>
+      <button
+        onClick={() =>
+          setLanContextValue(lanContextValue === "CH" ? "EN" : "CH")
+        }
+      >
+        改变语言
+      </button>
+      <button
+        onClick={() =>
+          setThemeContextValue(
+            themeContextValue.color === "#FFF"
+              ? {
+                  color: "#ccc",
+                  background: "cyan",
+                }
+              : {
+                  color: "#FFF",
+                  background: "blue",
+                }
+          )
+        }
+      >
+        改变主题
+      </button>
+    </div>
+  );
+}
+```
+
+![嵌套Provider](https://s2.loli.net/2022/03/04/BezC4fVZ5OK2IuG.gif)
+
+- ThemeContext 保存主题信息，用 LanContext 保存语言信息。
+- 两个 Provider 嵌套来传递全局信息。
+- 用两个 Consumer 嵌套来接受信息。
+
+#### 7.4.2 逐层传递 Provider
+
+Provider 还有一个良好的特性，就是可以逐层传递 context ，也就是一个 context 可以用多个 Provder  传递，下一层级的 Provder 会覆盖上一层级的 Provder 。React-redux 中 connect  就是用这个良好特性传递订阅器的。
+
+```jsx
+function Son2() {
+  return (
+    <ThemeContext.Consumer>
+      {(themeContextValue2) => {
+        const { color, background, margin } = themeContextValue2;
+        return (
+          <div className="sonbox" style={{ color, background, margin }}>
+            第二层Provder
+          </div>
+        );
+      }}
+    </ThemeContext.Consumer>
+  );
+}
+
+function SSon() {
+  const { color, background, marginBottom } = React.useContext(ThemeContext);
+  const [themeContextValue2] = React.useState({
+    color: "#fff",
+    background: "blue",
+    margin: "40px",
+  });
+  /* 第二层 Provder 传递内容 */
+  return (
+    <div className="box" style={{ color, background, marginBottom }}>
+      第一层Provder
+      <ThemeContext.Provider value={themeContextValue2}>
+        <Son2 />
+      </ThemeContext.Provider>
+    </div>
+  );
+}
+
+export function ProviderDemo2() {
+  const [themeContextValue] = React.useState({
+    color: "orange",
+    background: "pink",
+    marginBottom: "40px",
+  });
+  /* 第一层  Provider 传递内容  */
+  return (
+    <ThemeContext.Provider value={themeContextValue}>
+      <SSon />
+    </ThemeContext.Provider>
+  );
+}
+```
+
+![image-20220304124118679](https://s2.loli.net/2022/03/04/HyUT7oqYgQ8tVdc.png)
+
+- 全局只有一个 ThemeContext ，两次用 provider 传递两个不同 context 。
+- 组件获取 context 时候，会获取离当前组件最近的上一层 Provider 。
+- 下一层的 provider 会覆盖上一层的 provider 。
+
+Provider 特性总结：
+
+- 1 Provider 作为提供者传递 context ，provider中value属性改变会使所有消费context的组件重新更新。
+- 2 Provider可以逐层传递context，下一层Provider会覆盖上一层Provider。
+
+### 7.4 进阶实践 切换主题模式
+
+```jsx
+// 进阶实践 切换主题模式
+import React, { useState, useContext } from "react";
+import PropTypes from "prop-types";
+import {
+  HomeOutlined,
+  SettingFilled,
+  SmileOutlined,
+  SyncOutlined,
+  LoadingOutlined,
+} from "@ant-design/icons";
+
+const ThemeContext = React.createContext(null);
+
+const theme = {
+  //主题颜色
+  dark: {
+    color: "#1890ff",
+    background: "#1890ff",
+    border: "1px solid blue",
+    type: "dark",
+  },
+  light: {
+    color: "#fc4838",
+    background: "#fc4838",
+    border: "1px solid pink",
+    type: "light",
+  },
+};
+
+// input 输入框 useContext 模式
+function Input({ label, placeholder }) {
+  const { color, border } = useContext(ThemeContext);
+  return (
+    <div>
+      <label style={{ color }}>{label}</label>
+      <input className="input" placeholder={placeholder} style={{ border }} />
+    </div>
+  );
+}
+
+Input.propTypes = {
+  label: PropTypes.string,
+  placeholder: PropTypes.string,
+};
+
+// 容器组件 Consumer 模式
+function Box(props) {
+  return (
+    <ThemeContext.Consumer>
+      {(themeContextValue) => {
+        const { border, color } = themeContextValue;
+        return (
+          <div className="context_box" style={{ border, color }}>
+            {props.children}
+          </div>
+        );
+      }}
+    </ThemeContext.Consumer>
+  );
+}
+
+Box.propTypes = {
+  children: PropTypes.any,
+};
+
+function Checkbox({ label, name, onChange }) {
+  const { type, color } = useContext(ThemeContext);
+  return (
+    <div className="checkbox" onClick={onChange}>
+      <label htmlFor="name"> {label} </label>
+      <input
+        type="checkbox"
+        id={name}
+        value={type}
+        name={name}
+        checked={type === name}
+        style={{ color }}
+      />
+    </div>
+  );
+}
+Checkbox.propTypes = {
+  label: PropTypes.string,
+  name: PropTypes.string,
+  onChange: PropTypes.func,
+};
+
+// contextType 模式
+class App extends React.PureComponent {
+  static contextType = ThemeContext;
+  render() {
+    const { border, setTheme, color, background } = this.context;
+    return (
+      <div className="context_app" style={{ border, color }}>
+        <div className="context_change_theme">
+          <span> 选择主题： </span>
+          <Checkbox
+            label="light"
+            name="light"
+            onChange={() => setTheme(theme.light)}
+          />
+          <Checkbox
+            label="dark"
+            name="dark"
+            onChange={() => setTheme(theme.dark)}
+          />
+        </div>
+        <div className="box_content">
+          <Box>
+            <Input label="姓名: " placeholder="请输入姓名" />
+            <Input label="age: " placeholder="请输入年龄" />
+            <button className="searchbtn" style={{ background }}>
+              确定
+            </button>
+            <button className="concellbtn" style={{ color }}>
+              取消
+            </button>
+          </Box>
+          <Box>
+            <HomeOutlined twoToneColor={color} />
+            <SettingFilled twoToneColor={color} />
+            <SmileOutlined twoToneColor={color} />
+            <SyncOutlined spin twoToneColor={color} />
+            <SmileOutlined twoToneColor={color} rotate={180} />
+            <LoadingOutlined twoToneColor={color} />
+          </Box>
+          <Box>
+            <div className="person_des" style={{ color: "#fff", background }}>
+              I am alien <br />
+              let us learn React!
+            </div>
+          </Box>
+        </div>
+      </div>
+    );
+  }
+}
+
+export function AdvancedPractiveChangeTheme() {
+  const [themeContextValue, setThemeContextValue] = useState(theme.dark);
+  /* 传递颜色主题 和 改变主题的方法 */
+  return (
+    <ThemeContext.Provider
+      value={{ ...themeContextValue, setTheme: setThemeContextValue }}
+    >
+      <App />
+    </ThemeContext.Provider>
+  );
+}
+```
+
+![高阶实践](https://s2.loli.net/2022/03/04/ygbaxT4IHAvwSEO.gif)
+
+流程分析：
+
+- 在 Root 组件中，用 Provider 把主题颜色 `themeContextValue` 和改变主题的 `setTheme` 传入 context 。
+- 在 App 中切换主题。
+- 封装统一的 Input Checkbox Box 组件，组件内部消费主题颜色的 context ，主题改变，统一更新，这样就不必在每一个模块都绑定主题，统一使用主体组件就可以了。
+
