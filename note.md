@@ -3205,3 +3205,261 @@ export function AdvancedPractiveChangeTheme() {
 - 在 App 中切换主题。
 - 封装统一的 Input Checkbox Box 组件，组件内部消费主题颜色的 context ，主题改变，统一更新，这样就不必在每一个模块都绑定主题，统一使用主体组件就可以了。
 
+
+## 8. 模块化 CSS
+
+### 8.1 模块化 CSS 的作用
+
+css 模块化一直是 React 痛点，为什么这么说呢？ 因为 React 没有像 Vue 中 `style scoped` 的模版写法，可以直接在 .vue 文件中声明 css 作用'域'。随着 React 项目日益复杂化、繁重化，React 中 css 面临很多问题，比如样式类名全局污染、命名混乱、样式覆盖等。这时， css 模块化就显得格外重要。
+
+ **css 模块化的几个重要作用，如下**
+
+1. 防止全局污染，样式被覆盖
+
+    全局污染、样式覆盖是很容易面临的一个问题。首先假设一个场景，比如小明在参与一个项目开发，不用 css 模块化，在 React 一个组件对应的 css 文件中这么写：
+
+    ```css
+    .button{
+        background:red;
+    }
+    ```
+
+    但是在浏览器中并没有生效，于是小明开始排查，结果发现，在其他组件中，其他小伙伴这么写：
+
+    ```css
+    .button{
+        background:red;
+    }
+    ```
+
+    由于权重问题，样式被覆盖了。
+
+    上述是一个很简单的例子，但是如果不规范 css 的话，这种情况在实际开发中会变得更加棘手，有时候甚至不得不用 `!important` 或者 `行内样式` 来解决，但是只是一时痛快，如果后续有其他样式冲突，那么更难解决这个问题。 Web Components 标准中的 Shadow DOM 能彻底解决这个问题，但它的做法有点极端，样式彻底局部化，造成外部无法重写样式，损失了灵活性。
+
+2. 命名混乱
+
+    没有 css 模块化和统一的规范，会使得多人开发，没有一个规范，比如命名一个类名，有的人用驼峰`.contextBox`，有的人用下划线`.context_box`，还有的人用中划线`.context-box`，使得项目不堪入目。
+
+3. css 代码冗余，体积庞大
+
+    这种情况也普遍存在，因为 React 中各个组件是独立的，所以导致引入的 css 文件也是相互独立的，比如在两个 css 中，有很多相似的样式代码，如果没有用到 css 模块化，构建打包上线的时候全部打包在一起，那么无疑会增加项目的体积。
+
+为了解决如上问题 css 模块化也就应运而生了，关于 React 使用 css 模块化的思路主要有两种：
+
+- 第一种 `css module` ，依赖于 webpack 构建和 css-loader 等 loader 处理，将 css 交给 js 来动态加载。
+- 第二种就是直接放弃 css ，`css in js`用 js 对象方式写 css ，然后作为 style 方式赋予给 React 组件的 DOM 元素，这种写法将不需要 .css .less .scss 等文件，取而代之的是每一个组件都有一个写对应样式的 js 文件。
+
+### 8.2 CSS Modules
+
+css Modules ，使得项目中可以像加载 js 模块一样加载 css ，本质上通过一定自定义的命名规则生成唯一性的 css  类名，从根本上解决 css 全局污染，样式覆盖的问题。对于 css modules 的配置，推荐使用 css-loader，因为它对 CSS  Modules 的支持最好，而且很容易使用。接下来介绍一下配置的流程。
+
+**css-loader配置**
+
+```js
+{
+    test: /\.css$/,/* 对于 css 文件的处理 */
+    use:[
+       'css-loader?modules' /* 配置css-loader ,加一个 modules */
+    ]
+}
+```
+
+**css文件**
+
+```css
+.text{
+    color: blue;
+}
+```
+
+**js文件**
+
+```js
+import style from './style.css'
+export default ()=><div>
+    <div className={ style.text } >验证 css modules </div>
+</div>
+```
+
+### 8.3 CSS in JS
+
+#### 8.3.1 概念和使用
+
+`CSS IN JS` 相比 CSS Modules 更加简单， CSS IN JS 放弃css ，用 js 对象形式直接写 style
+
+组件：
+
+```jsx
+import React from "react";
+import style from "./style.js";
+
+export function CSSModuleDemo() {
+  console.log("style:", style);
+  return <div style={style.text}>验证 CSS Modules</div>;
+}
+```
+
+在同级目录下，新建 style.js 用来写样式
+
+```js
+const text = {
+  color: "cyan",
+  fontSize: "3em",
+};
+
+export default {
+  text
+}
+```
+
+![image-20220305103211831](https://s2.loli.net/2022/03/05/GC9wLabvsAmOPeu.png)
+
+#### 8.3.2 灵活运用
+
+由于 CSS IN JS 本质上就是运用 js 中对象形式保存样式， 所以 js 对象的操作方法都可以灵活的用在 CSS IN JS上。
+
+- **拓展运算符实现样式继承**
+
+    ```js
+    const baseStyle = { /* 基础样式 */ }
+
+    const containerStyle = {
+        ...baseStyle,  // 继承  baseStyle 样式
+        color:'#ccc'   // 添加的额外样式
+    }
+    ```
+
+- **动态添加样式变得更加灵活**
+
+    ```js
+    /* 暗色调  */
+    const dark = {
+        backgroundColor:'black',
+    }
+    /* 亮色调 */
+    const light = {
+        backgroundColor:'white',
+    }
+    ```
+
+    ```js
+    <span style={ theme==='light' ? Style.light : Style.dark  }  >hi , i am CSS IN JS!</span>
+    ```
+
+    更加复杂的结构：
+
+    ```js
+     <span style={ { ...Style.textStyle , ...(theme==='light' ? Style.light : Style.dark  ) }} >
+         hi , i am CSS IN JS!
+     </span>
+    ```
+
+- style-components库使用
+
+    CSS IN JS 也可以由一些第三方库支持，比如 `style-components`。 `style-components` 可以把写好的 css 样式注入到组件中，项目中应用的已经是含有样式的组件。
+
+    - **安装**
+
+        ```bash
+        yarn add styled-components
+        ```
+
+    - 基础使用
+
+        ```jsx
+        import React from "react";
+        import styled from "styled-components";
+
+        /* 给button标签添加样式，形成 Button React 组件 */
+        const Button = styled.button`
+          background: #6a8bad;
+          color: #fff;
+          min-width: 96px;
+          height: 36px;
+          border: none;
+          border-radius: 18px;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          margin-left: 20px !important;
+        `;
+
+        export function StyleComponentDemo() {
+          return (
+            <div>
+              StyleComponentDemo
+              <Button>按钮</Button>
+            </div>
+          );
+        }
+        ```
+
+        ![image-20220305103844835](https://s2.loli.net/2022/03/05/NgTto32JmDfEPnG.png)
+
+    - 基于 props 动态添加样式
+
+        style-components 可以通过给生成的组件添加 props 属性 ，来动态添加样式。
+
+        ```jsx
+        const PropsButton = styled.button`
+            background: ${ props => props.theme ? props.theme : '#6a8bad'  };
+            color: #fff;
+            min-width: 96px;
+            height :36px;
+            border :none;
+            border-radius: 18px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-left: 20px !important;
+        `
+
+        export function StyleComponentDemo() {
+            return (
+                <div>
+                    StyleComponentDemo
+                    <Button>按钮</Button>
+                    <PropsButton theme={'#fc4838'}  >props主题按钮</PropsButton>
+                </div>
+            );
+        }
+        ```
+
+        ![image-20220305104047969](https://s2.loli.net/2022/03/05/OSaFqT8yGslEdD7.png)
+
+
+
+    - 继承样式
+
+        style-components 可以通过继承方式来达到样式的复用。
+
+        ```jsx
+        const NewButton = styled(Button)`
+          background: cyan;
+          color: yellow;
+        `;
+
+        export function StyleComponentDemo() {
+          return (
+            <div>
+              StyleComponentDemo
+              <Button>按钮</Button>
+              <PropsButton theme={"#fc4838"}>props主题按钮</PropsButton>
+              <NewButton> 继承按钮</NewButton>
+            </div>
+          );
+        }
+        ```
+
+        ![image-20220305104229165](https://s2.loli.net/2022/03/05/gl84pyjneEfKcOd.png)
+
+    - 编辑器扩展
+
+        vscode 可以使用 vscode-styled-components 来进行代码高亮和语法提示
+
+        ![image-20220305104530098](https://s2.loli.net/2022/03/05/tZgQ5RvYXLjAKz9.png)
+
+
+
+## 9. 高阶组件
+
