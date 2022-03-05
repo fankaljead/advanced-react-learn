@@ -2,7 +2,7 @@
  * @Author: Zhou Xianghui
  * @Date: 2022-01-13 12:57:54
  * @LastEditors: Zhou Xianghui
- * @LastEditTime: 2022-03-05 10:37:38
+ * @LastEditTime: 2022-03-05 14:06:27
  * @FilePath: \advancend-react\src\App.jsx
  * @Description:
  * after a long, long, long time
@@ -17,6 +17,7 @@ import {
 import { AdvancedPractiveChangeTheme } from "./components/basic/7_context/advanced_practive_change_theme";
 import { CSSModuleDemo } from "./components/basic/8_modular_css";
 import { StyleComponentDemo } from "./components/basic/8_modular_css/style_component";
+import { UseDynamicHocDemo, UseEventWatchDemo } from "./components/basic/9_hoc";
 // import { ProviderDemo } from "./components/basic/7_context/dynamic_context";
 // import { B, GrandFather } from "./components/basic/7_context";
 // import { PropsComponentDemo, FatherIndex } from "./components/basic/4_props";
@@ -81,7 +82,10 @@ function App() {
 
       {/* <AdvancedPractiveChangeTheme /> */}
       {/* <CSSModuleDemo /> */}
-      <StyleComponentDemo />
+      {/* <StyleComponentDemo /> */}
+
+      {/* <UseDynamicHocDemo /> */}
+      <UseEventWatchDemo />
     </div>
   );
 }

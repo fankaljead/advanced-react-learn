@@ -3463,3 +3463,386 @@ export default {
 
 ## 9. 高阶组件
 
+
+**高阶组件 HOC (higher order components )** 是 React 中用于复用组件逻辑的一种高级技巧。
+
+具体而言，**高阶组件是参数为组件，返回值为新组件的函数。**
+
+```jsx
+const EnhancedComponent = higherOrderComponent(WrappedComponent);
+```
+
+组件是将 props 转换为 UI，而高阶组件是将组件转换为另一个组件。
+
+### 9.1 高阶组件基本介绍
+
+#### 9.1.1 高阶组件能解决什么问题
+
+高级组件到底能够解决什么问题？举一个特别简单的例子，话说小明负责开发一个 web 应用，应用的结构如下所示，而且这个功能小明已经开发完了。
+
+![hoc](https://s2.loli.net/2022/03/05/8a736ACJb9HqXgn.png)
+
+但是，有一天老板突然提出了一个权限隔离的需求，就是部分模块组件受到权限控制，后台的数据交互的结果权限控制着模块展示与否，而且没有权限会默认展示无权限提示页面。（如下图，黄色部分是受到权限控制的组件模块）
+
+![hoc2](https://s2.loli.net/2022/03/05/snywaeZICNB1Jq5.png)
+
+那么小明面临的问题是，如何给需要权限隔离的模块，绑定权限呢？那第一种思路是把所有的需要权限隔离的模块重新绑定权限，通过权限来判断组件是否展示。
+
+![hoc3](https://s2.loli.net/2022/03/05/OdZ6PFHjMr5IxYa.png)
+
+这样无疑会给小明带来很多的工作量，而且后续项目可能还有受权限控制的页面或者组件，都需要手动绑定权限。那么如何解决这个问题呢，思考一下，既然是判断权限，那么可以把逻辑都写在一个容器里，然后将每个需要权限的组件通过容器包装一层，这样不就不需要逐一手动绑定权限了吗？所以 HOC 可以合理的解决这个问题，通过 HOC 模式结构如下图所示：
+
+![image-20220305111422131](https://s2.loli.net/2022/03/05/LmQB4bKjn7AceWP.png)
+
+综上所述，HOC的产生根本作用就是解决大量的代码复用，逻辑复用问题。既然说到了逻辑复用，那么具体复用了哪些逻辑呢？
+
+- 首先第一种就是像上述的拦截问题，本质上是对渲染的控制，对渲染的控制可不仅仅指是否渲染组件，还可以像 dva 中 dynamic 那样懒加载/动态加载组件。
+- 还有一种场景，比如项目中想让一个非 Route 组件，也能通过 props 获取路由实现跳转，但是不想通过父级路由组件层层绑定 props ，这个时候就需要一个 HOC 把改变路由的 history 对象混入 props 中，于是 withRoute 诞生了。所以 HOC  还有一个重要的作用就是让 props 中混入一些你需要的东西。
+- 还有一种情况，如果不想改变组件，只是监控组件的内部状态，对组件做一些赋能，HOC 也是一个不错的选择，比如对组件内的点击事件做一些监控，或者加一次额外的生命周期，我之前写过一个开源项目 `react-keepalive-router`，可以缓存页面，项目中的 keepaliveLifeCycle 就是通过 HOC 方式，给业务组件增加了额外的生命周期。
+
+#### 9.1.2 高阶组件基础概念
+
+**高阶组件就是一个将函数作为参数并且返回值也是函数的函数**。高阶组件是**以组件作为参数，返回组件的函数**。返回的组件把传进去的组件进行功能强化
+
+![高阶组件](https://s2.loli.net/2022/03/05/kThl7aOyUPxdRSv.png)
+
+- **两种不同的高阶组件**
+
+    常用的高阶组件有**属性代理**和**反向继承**两种，两者之间有一些共性和区别。
+
+    - **属性代理**
+
+        **属性代理，就是用组件包裹一层代理组件**，在代理组件上，可以做一些，对源组件的强化操作。这里注意属性代理返回的是一个新组件，被包裹的原始组件，将在新的组件里被挂载。
+
+        ```jsx
+        function HOC(WrapComponent) {
+          return class Advance extends React.Component {
+            state = {
+              name: "zxh",
+            };
+            render() {
+              return <WrapComponent {...this.props} {...this.state} />;
+            }
+          };
+        }
+        ```
+
+        **优点：**
+
+        - ①  属性代理可以和业务组件低耦合，零耦合，对于条件渲染和 props 属性增强，只负责控制子组件渲染和传递额外的 props  就可以了，所以无须知道，业务组件做了些什么。所以正向属性代理，更适合做一些开源项目的 HOC ，目前开源的 HOC 基本都是通过这个模式实现的。
+        - ②  同样适用于类组件和函数组件。
+        - ③  可以完全隔离业务组件的渲染，因为属性代理说白了是一个新的组件，相比反向继承，可以完全控制业务组件是否渲染。
+        - ④  可以嵌套使用，多个 HOC 是可以嵌套使用的，而且一般不会限制包装 HOC 的先后顺序。
+
+        **缺点：**
+
+        - ①  一般无法直接获取原始组件的状态，如果想要获取，需要 ref 获取组件实例。
+        - ②  无法直接继承静态属性。如果需要继承需要手动处理，或者引入第三方库。
+        - ③  因为本质上是产生了一个新组件，所以需要配合 forwardRef 来转发 ref。
+
+    - **反向继承**
+
+        反向继承和属性代理有一定的区别，在于包装后的组件继承了原始组件本身，所以此时无须再去挂载业务组件。
+
+        ```jsx
+        class Index extends React.Component {
+          render() {
+            return <div>hello world</div>;
+          }
+        }
+
+        function HOC(Component) {
+          return class wrapComponent extends Component {};
+        }
+
+        export default HOC(Index);
+        ```
+
+        **优点：**
+
+        - ①  方便获取组件内部状态，比如 state ，props ，生命周期，绑定的事件函数等。
+        - ②  es6继承可以良好继承静态属性。所以无须对静态属性和方法进行额外的处理。
+
+        **缺点：**
+
+        - ①  函数组件无法使用。
+        - ②  和被包装的组件耦合度高，需要知道被包装的原始组件的内部状态，具体做了些什么？
+        - ③  如果多个反向继承 HOC 嵌套在一起，当前状态会覆盖上一个状态。这样带来的隐患是非常大的，比如说有多个  componentDidMount ，当前 componentDidMount 会覆盖上一个 componentDidMount  。这样副作用串联起来，影响很大。
+
+### 9.2 高阶组件功能说明
+
+#### 9.2.1 强化 props
+
+强化 props 就是在原始组件的 props 基础上，加入一些其他的 props ，强化原始组件功能。举个例子，为了让组件也可以获取到路由对象，进行路由跳转等操作，所以 React Router 提供了类似 withRouter 的 HOC 。
+
+```jsx
+export function withRouter(Component) {
+  const displayName = `withRouter(${Component.displayName || Component.name})`;
+  const C = ({ wrappedComponentRef, ...remainingProps }) => {
+    return (
+      <RouterContext.Consumer>
+        {(context) => {
+          return (
+            <Component
+              {...remainingProps}
+              {...context}
+              ref={wrappedComponentRef}
+            />
+          );
+        }}
+      </RouterContext.Consumer>
+    );
+  };
+  C.displayName = displayName;
+  C.WrapComponent = Component;
+
+  return hoistStatics(C, Component);
+}
+```
+
+流程分析：
+
+- 分离出 props 中 wrappedComponentRef 和 remainingProps ， remainingProps 是原始组件真正的 props， wrappedComponentRef 用于转发 ref。
+- 用 Context.Consumer 上下文模式获取保存的路由信息。（ React Router 中路由状态是通过 context 上下文保存传递的）
+- 将路由对象和原始 props 传递给原始组件，所以可以在原始组件中获取 history ，location 等信息。
+
+#### 9.2.2 控制渲染
+
+1. **渲染劫持**
+
+    HOC 反向继承模式，可以通过 super.render() 得到 render 之后的内容，利用这一点，可以做渲染劫持 ，更有甚者可以修改 render 之后的 React element 对象。
+
+    ```jsx
+    const HOC3 = (WrapComponent) => {
+      class Index extends WrapComponent {
+        render() {
+          return this.props.visible ? super.render() : <div>暂无数据</div>;
+        }
+      }
+    };
+    ```
+
+
+
+2. **修改渲染树**
+
+    ```jsx
+    (function () {
+      class Index extends React.Component {
+        render() {
+          return (
+            <div>
+              <ul>
+                <li>react</li>
+                <li>vue</li>
+                <li>Angular</li>
+              </ul>
+            </div>
+          );
+        }
+      }
+      function HOC(Component) {
+        return class Advance extends Component {
+          render() {
+            const element = super.render();
+            const otherProps = {
+              name: "alien",
+            };
+            /* 替换 Angular 元素节点 */
+            const appendElement = React.createElement(
+              "li",
+              {},
+              `hello ,world , my name  is ${otherProps.name}`
+            );
+            const newchild = React.Children.map(
+              element.props.children.props.children,
+              (child, index) => {
+                if (index === 2) return appendElement;
+                return child;
+              }
+            );
+            return React.cloneElement(element, element.props, newchild);
+          }
+        };
+      }
+    })();
+    ```
+
+
+
+3. **动态加载**
+
+    dva 中 dynamic 就是配合 import ，实现组件的动态加载的，而且每次切换路由，都会有 Loading 效果，接下来看看大致的实现思路。
+
+    ```jsx
+    export function dynamicHoc(loadRouter) {
+      return class Content extends React.Component {
+        state = { Component: null };
+        componentDidMount() {
+          this.state.Component &&
+            loadRouter()
+              .then((module) => module.default)
+              .then((Component) => this.setState({ Component }));
+        }
+        render() {
+          const { Component } = this.state;
+          return Component ? <Component {...this.props} /> : <Loading />;
+        }
+      };
+    }
+
+    const Loading = () => <div>loading...</div>;
+    ```
+
+    **使用：**
+
+    ```jsx
+    const DynamicHocDemo = dynamicHoc(() => import("./Banner.jsx"));
+    ```
+
+    实现思路：
+
+    - DynamicHocDemo 组件中，在 componentDidMount 生命周期动态加载上述的路由组件Component，如果在切换路由或者没有加载完毕时，显示的是 Loading 效果。
+
+#### 9.2.3 组件赋能
+
+1. **ref 获取实例**
+
+    对于属性代理虽然不能直接获取组件内的状态，但是可以通过 ref 获取组件实例，获取到组件实例，就可以获取组件的一些状态，或是手动触发一些事件，进一步强化组件，但是注意的是：类组件才存在实例，函数组件不存在实例。
+
+    ```jsx
+    function Hoc(Component){
+      return class WrapComponent extends React.Component{
+          constructor(){
+            super()
+            this.node = null /* 获取实例，可以做一些其他的操作。 */
+          }
+          render(){
+            return <Component {...this.props}  ref={(node) => this.node = node }  />
+          }
+      }
+    }
+    ```
+
+
+
+2. **事件监控**
+
+    HOC 不一定非要对组件本身做些什么？也可以单纯增加一些事件监听，错误监控。接下来，接下来做一个 `HOC` ，只对组件内的点击事件做一个监听效果。
+
+    ```jsx
+    function ClickHoc(Component) {
+      return function Wrap(props) {
+        const dom = React.useRef();
+        React.useEffect(() => {
+          const handlerClick = () => console.log("发生点击事件");
+          dom.current.addEventListener("click", handlerClick);
+          return () => dom.current.removeEventListener("click", handlerClick);
+        }, []);
+        return (
+          <div ref={dom}>
+            <Component {...props} />
+          </div>
+        );
+      };
+    }
+
+    class Demo extends React.Component {
+      render() {
+        return (
+          <div className="index">
+            <p>hello world</p>
+            <button>组件内部点击</button>
+          </div>
+        );
+      }
+    }
+
+    export function UseEventWatchDemo() {
+      const C = ClickHoc(Demo)
+      return <C />;
+    }
+    ```
+
+    ![事件监控](https://s2.loli.net/2022/03/05/YWhb4TpZDmjEkQy.gif)
+
+## 9.3 高阶组件注意事项
+
+#### 9.3.1 谨慎修改原型链
+
+```jsx
+function HOC (Component){
+  const proDidMount = Component.prototype.componentDidMount
+  Component.prototype.componentDidMount = function(){
+     console.log('劫持生命周期：componentDidMount')
+     proDidMount.call(this)
+  }
+  return  Component
+}
+```
+
+如上 HOC 作用仅仅是修改了原来组件原型链上的 componentDidMount 生命周期。但是这样有一个弊端就是如果再用另外一个 HOC 修改原型链上的 componentDidMount ，那么这个HOC的功能即将失效。
+
+#### 9.3.2 不要在函数组件内部或类组件render函数中使用HOC
+
+类组件中🙅错误写法：
+
+```js
+class Index extends React.Component{
+  render(){
+     const WrapHome = HOC(Home)
+     return <WrapHome />
+  }
+}
+```
+
+函数组件中🙅错误写法：
+
+```js
+function Index(){
+     const WrapHome = HOC(Home)
+     return  <WrapHome />
+}
+```
+
+这么写的话每一次类组件触发 render 或者函数组件执行都会产生一个新的WrapHome，`react diff` 会判定两次不是同一个组件，那么就会卸载老组件，重新挂载新组件，老组件内部的真实 DOM 节点，都不会合理的复用，从而造成了性能的浪费，而且原始组件会被初始化多次。
+
+#### 9.3.3 ref 的处理
+
+**高阶组件的约定是将所有 props 传递给被包装组件，但这对于 ref 并不适用**。那是因为 ref 实际上并不是一个 prop ， 就像 key 一样，对于 ref 属性它是由 React 专门处理的。那么如何通过 ref 正常获取到原始组件的实例呢？可以用 `forwardRef`做 ref 的转发处理。
+
+#### 9.3.4 注意多个HOC嵌套顺序问题
+
+多个HOC嵌套，应该留意一下HOC的顺序，还要分析出要各个 HOC 之间是否有依赖关系。
+
+对于 class 声明的类组件，可以用装饰器模式，对类组件进行包装：
+
+```js
+@HOC1(styles)
+@HOC2
+@HOC3
+class Index extends React.Componen{
+    /* ... */
+}
+```
+
+对于函数组件：
+
+```js
+function Index(){
+    /* .... */
+}
+export default HOC1(styles)(HOC2( HOC3(Index) ))
+```
+
+HOC1 -> HOC2 -> HOC3 -> Index
+
+![image-20220305141812457](https://s2.loli.net/2022/03/05/TS6tpQRkH5xuBVa.png)
+
+**要注意一下包装顺序，越靠近 `Index` 组件的，就是越内层的 HOC ,离组件 `Index` 也就越近。**
+
+还有一些其他的小细节：
+
+- 1 如果2个 HOC 相互之间有依赖。比如 HOC1 依赖 HOC2 ，那么 HOC1 应该在 HOC2 内部。
+- 2 如果想通过 HOC 方式给原始组件添加一些额外生命周期，因为涉及到获取原始组件的实例 instance ，那么当前的 HOC 要离原始组件最近。
+
