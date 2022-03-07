@@ -3846,3 +3846,177 @@ HOC1 -> HOC2 -> HOC3 -> Index
 - 1 如果2个 HOC 相互之间有依赖。比如 HOC1 依赖 HOC2 ，那么 HOC1 应该在 HOC2 内部。
 - 2 如果想通过 HOC 方式给原始组件添加一些额外生命周期，因为涉及到获取原始组件的实例 instance ，那么当前的 HOC 要离原始组件最近。
 
+#### 9.3.5 继承静态属性
+
+上述讲到在属性代理 HOC 本质上返回了一个新的 component ，那么如果给原来的 component 绑定一些静态属性方法，如果不处理，新的 component 上就会丢失这些静态属性方法。那么如何解决这个问题呢。
+
+- **手动继承**
+
+    当然可以手动将原始组件的静态方法 copy 到 HOC 组件上来，但前提是必须准确知道应该拷贝哪些方法。
+
+    ```jsx
+    function HOC(Component) {
+        class WrappedComponent extends React.Component {
+            //
+        }
+        // 必须准确知道应该拷贝哪些方法
+        WrappedComponent.staticMethod = Component.staticMethod;
+        return WrappedComponent;
+    }
+    ```
+
+
+
+- **引入第三方库**
+
+    每个静态属性方法都手动绑定会很累，尤其对于开源的 HOC ，对原生组件的静态方法是未知 ，为了解决这个问题可以使用 `hoist-non-react-statics` 自动拷贝所有的静态方法:
+
+    ```jsx
+    import hoistNonReactStatic from "hoist-non-react-statics";
+    function HOC(Component) {
+        class WrappedComponent extends React.Component {
+            //
+        }
+        hoistNonReactStatic(WrappedComponent, Component);
+        return WrappedComponent;
+    }
+    ```
+
+
+
+### 9.4 进阶实践-权限拦截
+
+
+
+## 10. 渲染控制
+
+### 10.1 React 渲染
+
+对于 React 渲染，你不要仅仅理解成类组件触发 render 函数，函数组件本身执行，事实上，从调度更新任务到调和  fiber，再到浏览器渲染真实 DOM，每一个环节都是渲染的一部分，至于对于每个环节的性能优化，React  在底层已经处理了大部分优化细节，包括设立任务优先级、异步调度、diff算法、时间分片都是 React  为了提高性能，提升用户体验采取的手段。所以，开发者只需要告诉 React 哪些组件需要更新，哪些组件不需要更新。于是，React 提供了  PureComponent，shouldComponentUpdated，memo 等优化手段。
+
+**render 阶段的作用**
+
+首先来思考一个问题，组件在一次更新中，类组件执行 render ，执行函数组件 renderWithHooks （ renderWithHook 内部执行 React 函数组件本身），他们的作用是什么呢？ 他们真实渲染了 DOM 了吗？显然不是，真实 DOM 是在 commit  阶段挂载的，之前章节打印过 render 后的内容。
+
+那么**render的作用** **是根据一次更新中产生的新状态值，通过 React.createElement  ，替换成新的状态，得到新的 React element 对象**，新的 element 对象上，保存了最新状态值。 createElement  会产生一个全新的props。到此 render 函数使命完成了。
+
+接下来，React 会调和由 render 函数产生 chidlren，将子代 element 变成  fiber（这个过程如果存在  alternate，会复用 alternate 进行克隆，如果没有 alternate ，那么将创建一个），将 props 变成  pendingProps ，至此当前组件更新完毕。然后如果 children 是组件，会继续重复上一步，直到全部 fiber 调和完毕。完成  render 阶段。
+
+### 10.2 React 几种控制 render 方法
+
+React 提供了几种控制 render 的方式。我这里会介绍原理和使用。说到对render 的控制，究其本质，主要有以下两种方式：
+
+- 第一种就是从父组件直接隔断子组件的渲染，经典的就是 memo，缓存 element 对象。
+- 第二种就是组件从自身来控制是否 render ，比如：PureComponent ，shouldComponentUpdate 。
+
+#### 10.2.1 缓存 React.element 对象
+
+第一种是对 React.element 对象的缓存。这是一种父对子的渲染控制方案，来源于一种情况，父组件 render ，子组件有没有必要跟着父组件一起 render ，如果没有必要，则就需要阻断更新流，如下先举两个小例子🌰：
+
+```jsx
+function Children({ number }) {
+  console.log("子组件渲染");
+  return <div>let us learn react {number}</div>;
+}
+Children.propTypes = {
+  number: PropTypes.number,
+};
+
+// 父组件
+export class StoreReactElementDemo1 extends React.Component {
+  state = {
+    numberA: 0,
+    numberB: 0,
+  };
+
+  render() {
+    return (
+      <div>
+        <Children number={this.state.numberA} />
+        <button
+          onClick={() => this.setState({ numberA: this.state.numberA + 1 })}
+        >
+          改变numberA -{this.state.numberA}
+        </button>
+        <button
+          onClick={() => this.setState({ numberB: this.state.numberB + 1 })}
+        >
+          改变numberB -{this.state.numberB}
+        </button>
+      </div>
+    );
+  }
+}
+```
+
+![缓存 React.element 对象1](https://s2.loli.net/2022/03/07/uUMxSNt3Oaby6nA.gif)
+
+那么怎么样用缓存 element 来避免 children 没有必要的更新呢？将如上父组件做如下修改。
+
+```jsx
+export class StoreReactElementDemo2 extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      numberA: 0,
+      numberB: 0,
+    };
+    this.component = <Children number={this.state.numberA} />;
+  }
+
+  constrolComponentRender = () => {
+    const { props } = this.component;
+    /* 只有 numberA 变化的时候，重新创建 element 对象  */
+    if (props.number != this.state.numberA) {
+      return (this.component = React.cloneElement(this.component, {
+        number: this.state.numberA,
+      }));
+    }
+    return this.component;
+  };
+
+  render() {
+    return (
+      <div>
+        {this.constrolComponentRender()}
+        <button
+          onClick={() => this.setState({ numberA: this.state.numberA + 1 })}
+        >
+          改变numberA -{this.state.numberA}
+        </button>
+        <button
+          onClick={() => this.setState({ numberB: this.state.numberB + 1 })}
+        >
+          改变numberB -{this.state.numberB}
+        </button>
+      </div>
+    );
+  }
+}
+```
+
+- 首先把 Children 组件对应的 element 对象，挂载到组件实例的 component 属性下。
+- 通过 controllComponentRender 控制渲染 Children 组件，如果 numberA 变化了，证明  Children的props 变化了，那么通过 cloneElement  返回新的 element 对象，并重新赋值给 component  ，如果没有变化，那么直接返回缓存的 component 。
+
+![缓存 React.element 对象2](https://s2.loli.net/2022/03/07/4ItEi1cyDb9OwdZ.gif)
+
+**完美达到效果**
+
+这里不推荐在 React 类组价中这么写。推荐大家在函数组件里用 `useMemo` 达到同样的效果，代码如下所示。
+
+```jsx
+export const StoreReactElementDemo3 = () => {
+  const [numberA, setNumberA] = React.useState(0);
+  const [numberB, setNumberB] = React.useState(0);
+  return (
+    <div>
+      {(React.useMemo(() => <Children number={numberA} />), [numberA])}
+      <button onClick={() => setNumberA(numberA + 1)}>改变numberA</button>
+      <button onClick={() => setNumberB(numberB + 1)}>改变numberB</button>
+    </div>
+  );
+};
+```
+
+用 React.useMemo 可以达到同样的效果， 需要更新的值 numberA 放在 deps 中，numberA  改变，重新形成element对象，否则通过 useMemo 拿到上次的缓存值。达到如上同样效果。比起类组件，更推荐函数组件用 useMemo  这种方式。
+

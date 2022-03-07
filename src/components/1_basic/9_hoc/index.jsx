@@ -2,7 +2,7 @@
  * @Author: Zhou Xianghui
  * @Date: 2022-03-05 10:47:01
  * @LastEditors: Zhou Xianghui
- * @LastEditTime: 2022-03-05 14:15:01
+ * @LastEditTime: 2022-03-07 10:25:10
  * @FilePath: \advancend-react\src\components\basic\9_hoc\index.jsx
  * @Description: 高阶组件
  * after a long, long, long time
@@ -216,5 +216,30 @@ export function UseEventWatchDemo() {
   function FuncDemo() {
     const WrapHome = HOC(Home);
     return <WrapHome />;
+  }
+})();
+
+// 5. 继承静态属性
+// 手动继承
+(function () {
+  function HOC(Component) {
+    class WrappedComponent extends React.Component {
+      //
+    }
+    // 必须准确知道应该拷贝哪些方法
+    WrappedComponent.staticMethod = Component.staticMethod;
+    return WrappedComponent;
+  }
+})();
+
+// 引入第三方库
+import hoistNonReactStatic from "hoist-non-react-statics";
+(function () {
+  function HOC(Component) {
+    class WrappedComponent extends React.Component {
+      //
+    }
+    hoistNonReactStatic(WrappedComponent, Component);
+    return WrappedComponent;
   }
 })();
