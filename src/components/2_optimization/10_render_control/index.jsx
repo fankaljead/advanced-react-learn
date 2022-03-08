@@ -2,7 +2,7 @@
  * @Author: Zhou Xianghui
  * @Date: 2022-03-07 10:38:01
  * @LastEditors: Zhou Xianghui
- * @LastEditTime: 2022-03-07 10:55:01
+ * @LastEditTime: 2022-03-07 11:10:12
  * @FilePath: \advancend-react\src\components\2_optimization\10_render_control\index.jsx
  * @Description: 10 渲染控制
  * after a long, long, long time
@@ -97,6 +97,38 @@ export const StoreReactElementDemo3 = () => {
       {(React.useMemo(() => <Children number={numberA} />), [numberA])}
       <button onClick={() => setNumberA(numberA + 1)}>改变numberA</button>
       <button onClick={() => setNumberB(numberB + 1)}>改变numberB</button>
+    </div>
+  );
+};
+
+// useMemo 使用
+function Children2({ numberA, numberB }) {
+  console.log("子组件渲染 numberA:", numberA);
+  console.log("子组件渲染 numberB:", numberB);
+  return <div>let us learn react {numberA}</div>;
+}
+Children2.propTypes = {
+  numberA: PropTypes.number,
+  numberB: PropTypes.number,
+};
+
+export const UseMemoDemo1 = () => {
+  const [numberA, setNumberA] = React.useState(0);
+  const [numberB, setNumberB] = React.useState(0);
+  return (
+    <div>
+      {React.useMemo(
+        () => (
+          <Children2 numberA={numberA} numberB={numberB} />
+        ),
+        [numberA, numberB]
+      )}
+      <button onClick={() => setNumberA(numberA + 1)}>
+        改变numberA: {numberA}
+      </button>
+      <button onClick={() => setNumberB(numberB + 1)}>
+        改变numberB {numberB}
+      </button>
     </div>
   );
 };

@@ -2,7 +2,7 @@
  * @Author: Zhou Xianghui
  * @Date: 2022-01-13 12:57:54
  * @LastEditors: Zhou Xianghui
- * @LastEditTime: 2022-03-07 10:56:05
+ * @LastEditTime: 2022-03-08 15:32:58
  * @FilePath: \advancend-react\src\App.jsx
  * @Description:
  * after a long, long, long time
@@ -22,7 +22,16 @@ import {
   StoreReactElementDemo1,
   StoreReactElementDemo2,
   StoreReactElementDemo3,
+  UseMemoDemo1,
 } from "./components/2_optimization/10_render_control";
+import {
+  PureComponentDemo1,
+  PureComponentDemo2,
+  PureComponentDemo3,
+  PureComponentDemo4,
+} from "./components/2_optimization/10_render_control/pure_component";
+import { ShouldComponentUpdate } from "./components/2_optimization/10_render_control/shouldComponentUpdate";
+import { ReactMemoDemo } from "./components/2_optimization/10_render_control/react_memo";
 // import { ProviderDemo } from "./components/basic/7_context/dynamic_context";
 // import { B, GrandFather } from "./components/basic/7_context";
 // import { PropsComponentDemo, FatherIndex } from "./components/basic/4_props";
@@ -94,7 +103,14 @@ function App() {
 
       {/* <StoreReactElementDemo1 /> */}
       {/* <StoreReactElementDemo2 /> */}
-      <StoreReactElementDemo3 />
+      {/* <StoreReactElementDemo3 /> */}
+      {/* <UseMemoDemo1 /> */}
+      {/* <PureComponentDemo1 /> */}
+      {/* <PureComponentDemo2 /> */}
+      {/* <PureComponentDemo3 /> */}
+      {/* <PureComponentDemo4 /> */}
+      {/* <ShouldComponentUpdate /> */}
+      <ReactMemoDemo />
     </div>
   );
 }
