@@ -2,7 +2,7 @@
  * @Author: Zhou Xianghui
  * @Date: 2022-01-13 12:57:54
  * @LastEditors: Zhou Xianghui
- * @LastEditTime: 2022-03-08 15:32:58
+ * @LastEditTime: 2022-03-09 14:06:19
  * @FilePath: \advancend-react\src\App.jsx
  * @Description:
  * after a long, long, long time
@@ -18,20 +18,24 @@ import React from "react";
 // import { CSSModuleDemo } from "./components/basic/8_modular_css";
 // import { StyleComponentDemo } from "./components/basic/8_modular_css/style_component";
 // import { UseDynamicHocDemo, UseEventWatchDemo } from "./components/basic/9_hoc";
-import {
-  StoreReactElementDemo1,
-  StoreReactElementDemo2,
-  StoreReactElementDemo3,
-  UseMemoDemo1,
-} from "./components/2_optimization/10_render_control";
-import {
-  PureComponentDemo1,
-  PureComponentDemo2,
-  PureComponentDemo3,
-  PureComponentDemo4,
-} from "./components/2_optimization/10_render_control/pure_component";
-import { ShouldComponentUpdate } from "./components/2_optimization/10_render_control/shouldComponentUpdate";
-import { ReactMemoDemo } from "./components/2_optimization/10_render_control/react_memo";
+// import {
+//   StoreReactElementDemo1,
+//   StoreReactElementDemo2,
+//   StoreReactElementDemo3,
+//   UseMemoDemo1,
+// } from "./components/2_optimization/10_render_control";
+// import {
+//   PureComponentDemo1,
+//   PureComponentDemo2,
+//   PureComponentDemo3,
+//   PureComponentDemo4,
+// } from "./components/2_optimization/10_render_control/pure_component";
+// import { ShouldComponentUpdate } from "./components/2_optimization/10_render_control/shouldComponentUpdate";
+// import { ReactMemoDemo } from "./components/2_optimization/10_render_control/react_memo";
+import { SuspenseDemo } from "./components/2_optimization/11_render_tuning/suspense";
+import { ReactLazyDemo } from "./components/2_optimization/11_render_tuning/react_lazy";
+import { ErrorBoundaryDemo } from "./components/2_optimization/11_render_tuning/error_boundary";
+import { ReactLazySuspecePractice } from "./components/2_optimization/11_render_tuning/practice";
 // import { ProviderDemo } from "./components/basic/7_context/dynamic_context";
 // import { B, GrandFather } from "./components/basic/7_context";
 // import { PropsComponentDemo, FatherIndex } from "./components/basic/4_props";
@@ -110,7 +114,12 @@ function App() {
       {/* <PureComponentDemo3 /> */}
       {/* <PureComponentDemo4 /> */}
       {/* <ShouldComponentUpdate /> */}
-      <ReactMemoDemo />
+      {/* <ReactMemoDemo /> */}
+
+      {/* <SuspenseDemo /> */}
+      {/* <ReactLazyDemo /> */}
+      {/* <ErrorBoundaryDemo /> */}
+      <ReactLazySuspecePractice />
     </div>
   );
 }

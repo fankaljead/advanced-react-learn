@@ -2,7 +2,7 @@
  * @Author: Zhou Xianghui
  * @Date: 2022-03-08 15:14:25
  * @LastEditors: Zhou Xianghui
- * @LastEditTime: 2022-03-08 15:35:15
+ * @LastEditTime: 2022-03-09 09:10:27
  * @FilePath: \advancend-react\src\components\2_optimization\10_render_control\react_memo.jsx
  * @Description: React.memo
  * after a long, long, long time
@@ -22,6 +22,7 @@ const controlIsRender = (pre, next) => {
   );
 };
 
+//controlIsRender 为 false 更新，为 true 不更新
 const NewTextMemo = React.memo(TextDemo, controlIsRender);
 
 export class ReactMemoDemo extends React.Component {
