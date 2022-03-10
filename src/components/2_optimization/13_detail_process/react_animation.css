@@ -1,0 +1,37 @@
+/*
+ * @Author: Zhou Xianghui
+ * @Date: 2022-03-10 10:42:42
+ * @LastEditors: Zhou Xianghui
+ * @LastEditTime: 2022-03-10 10:42:49
+ * @FilePath: \advancend-react\src\components\2_optimization\13_detail_process\react_animation.css
+ * @Description:
+ * after a long, long, long time
+ * Copyright (c) 2022 by Zhou Xianghui/Qianjiang Tech, All Rights Reserved.
+ */
+
+.current {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid #ccc;
+}
+
+.animation {
+  animation: 1s changeColor;
+  background: yellowgreen;
+}
+
+@keyframes changeColor {
+  0% {
+    background: #c00;
+  }
+
+  50% {
+    background: orange;
+  }
+
+  100% {
+    background: yellowgreen;
+  }
+}

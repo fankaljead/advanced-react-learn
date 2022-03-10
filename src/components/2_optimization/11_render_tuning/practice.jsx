@@ -2,7 +2,7 @@
  * @Author: Zhou Xianghui
  * @Date: 2022-03-09 13:50:03
  * @LastEditors: Zhou Xianghui
- * @LastEditTime: 2022-03-09 14:10:07
+ * @LastEditTime: 2022-03-10 09:31:07
  * @FilePath: \advancend-react\src\components\2_optimization\11_render_tuning\practice.jsx
  * @Description: React.lazy + Suspence 模拟异步组件功能
  * after a long, long, long time

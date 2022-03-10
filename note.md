@@ -4949,3 +4949,571 @@ export class ReactLazySuspecePractice extends React.Component {
 **效果：**
 
 ![ReactLazySuspense实践](https://s2.loli.net/2022/03/09/JuGmcSTaMWvLiqD.gif)
+
+
+## 12. 处理海量数据
+
+ React 对于大量数据的处理方案，对于项目中大量数据通常存在两种情况：
+
+- 第一种就是数据可视化，比如像热力图，地图，大量的数据点位的情况。
+- 第二种情况是长列表渲染。
+
+### 12.1 时间分片
+
+**时间分片主要解决，初次加载，一次性渲染大量数据造成的卡顿现象**。
+
+**浏览器执 js 速度要比渲染 DOM 速度快的多。**时间分片，并没有本质减少浏览器的工作量，而是把一次性任务分割开来，给用户一种流畅的体验效果。就像造一个房子，如果一口气完成，那么会把人累死，所以可以设置任务，每次完成任务一部分，这样就能有效合理地解决问题。
+
+所以接下来实践一个时间分片的 demo ，一次性加载 20000 个元素块，元素块的位置和颜色是随机的。首先假设对 demo 不做任何优化处理。
+
+色块组件：
+
+```jsx
+/* 获取随机颜色 */
+function getColor() {
+  const r = Math.floor(Math.random() * 255);
+  const g = Math.floor(Math.random() * 255);
+  const b = Math.floor(Math.random() * 255);
+  return "rgba(" + r + "," + g + "," + b + ",0.8)";
+}
+
+/* 获取随机位置 */
+function getPostion(position) {
+  const { width, height } = position;
+  return {
+    left: Math.ceil(Math.random() * width) + "px",
+    top: Math.ceil(Math.random() * height) + "px",
+  };
+}
+
+/* 色块组件 */
+function Circle({ position }) {
+  //用 useMemo缓存，计算出来的随机位置和色值
+  const style = React.useMemo(() => {
+    return {
+      background: getColor(),
+      ...getPostion(position),
+    };
+  }, []);
+
+  return <div style={style} className="circle"></div>;
+}
+```
+
+子组件接受父组件的位置范围信息。并通过 useMemo 缓存计算出来随机的颜色，位置，并绘制色块。
+
+父组件：
+
+```jsx
+// 父组件
+class TimeSliceDemo extends React.Component {
+  state = {
+    dataList: [], // 数据源列表
+    renderList: [], // 渲染列表
+    position: { width: 0, height: 0 }, // 位置信息
+  };
+  box = React.createRef();
+
+  componentDidMount() {
+    const { offsetHeight, offsetWidth } = this.box.current;
+    const originList = new Array(20000).fill(1);
+    this.setState({
+      position: { height: offsetHeight, width: offsetWidth },
+      dataList: originList,
+      renderList: originList,
+    });
+  }
+
+  render() {
+    const { renderList, position } = this.state;
+    return (
+      <div className="bigData_index" ref={this.box}>
+        {renderList.map((item, index) => (
+          <Circle position={position} key={index} />
+        ))}
+      </div>
+    );
+  }
+}
+
+/* 控制展示Index */
+export const TimeSliceContainerDemo1 = () => {
+  const [show, setShow] = React.useState(false);
+  const [btnShow, setBtnShow] = React.useState(true);
+  const handleClick = () => {
+    setBtnShow(false);
+    setTimeout(() => {
+      setShow(true);
+    }, []);
+  };
+  return (
+    <div>
+      {btnShow && <button onClick={handleClick}>show</button>}
+      {show && <TimeSliceDemo />}
+    </div>
+  );
+};
+```
+
+父组件在 componentDidMount 模拟数据交互，用ref获取真实的DOM元素容器的宽高，渲染列表。
+
+效果：
+
+![没有时间分片](https://s2.loli.net/2022/03/10/mIJ9AzHSOGEXjoK.gif)
+
+可以直观看到这种方式渲染的速度特别慢，而且是一次性突然出现，体验不好，所以接下来要用时间分片做性能优化。
+
+```jsx
+// 改进方案
+class TimeSliceDemo2 extends React.Component {
+  state = {
+    dataList: [], //数据源列表
+    renderList: [], //渲染列表
+    position: { width: 0, height: 0 }, // 位置信息
+    eachRenderNum: 500, // 每次渲染数量
+  };
+  box = React.createRef();
+  componentDidMount() {
+    const { offsetHeight, offsetWidth } = this.box.current;
+    const originList = new Array(20000).fill(1);
+    const times = Math.ceil(
+      originList.length / this.state.eachRenderNum
+    ); /* 计算需要渲染此次数*/
+    let index = 1;
+    this.setState(
+      {
+        dataList: originList,
+        position: { height: offsetHeight, width: offsetWidth },
+      },
+      () => {
+        this.toRenderList(index, times);
+      }
+    );
+  }
+  toRenderList = (index, times) => {
+    if (index > times) return; /* 如果渲染完成，那么退出 */
+    const { renderList } = this.state;
+    renderList.push(
+      this.renderNewList(index)
+    ); /* 通过缓存element把所有渲染完成的list缓存下来，下一次更新，直接跳过渲染 */
+    this.setState({
+      renderList,
+    });
+    requestIdleCallback(() => {
+      /* 用 requestIdleCallback 代替 setTimeout 浏览器空闲执行下一批渲染 */
+      this.toRenderList(++index, times);
+    });
+  };
+  renderNewList(index) {
+    /* 得到最新的渲染列表 */
+    const { dataList, position, eachRenderNum } = this.state;
+    const list = dataList.slice(
+      (index - 1) * eachRenderNum,
+      index * eachRenderNum
+    );
+    return (
+      <React.Fragment key={index}>
+        {list.map((item, index) => (
+          <Circle key={index} position={position} />
+        ))}
+      </React.Fragment>
+    );
+  }
+  render() {
+    return (
+      <div className="bigData_index" ref={this.box}>
+        {this.state.renderList}
+      </div>
+    );
+  }
+}
+```
+
+- 第一步：计算时间片，首先用 eachRenderNum 代表一次渲染多少个，那么除以总数据就能得到渲染多少次。
+- 第二步：开始渲染数据，通过 `index>times` 判断渲染完成，如果没有渲染完成，那么通过 requestIdleCallback 代替 setTimeout 浏览器空闲执行下一帧渲染。
+- 第三步：通过 renderList 把已经渲染的 element 缓存起来，渲染控制章节讲过，这种方式可以直接跳过下一次的渲染。实际每一次渲染的数量仅仅为 demo 中设置的 500 个。
+
+完美达到效果（这个是 gif 形式，会出现丢帧的情况，在真实场景，体验感更好）：
+
+![时间分片](https://s2.loli.net/2022/03/10/JL23afwzy8lg1Nn.gif)
+
+### 12.2 虚拟列表
+
+虚拟列表是一种长列表的解决方案，现在滑动加载是 M 端和 PC  端一种常见的数据请求加载场景，这种数据交互有一个问题就是，如果没经过处理，加载完成后数据展示的元素，都显示在页面上，如果伴随着数据量越来越大，会使页面中的 DOM 元素越来越多，即便是像 React 可以良好运用 diff 来复用老节点，但也不能保证大量的 diff  带来的性能开销。所以虚拟列表的出现，就是解决大量 DOM 存在，带来的性能问题。
+
+何为虚拟列表，就是在长列表滚动过程中，只有视图区域显示的是真实 DOM ，滚动过程中，不断截取视图的有效区域，让人视觉上感觉列表是在滚动。达到无限滚动的效果。
+
+虚拟列表划分可以分为三个区域：视图区 + 缓冲区 + 虚拟区。
+
+![虚拟列表](https://s2.loli.net/2022/03/10/DU8vnAwdYI5klGp.png)
+
+- 视图区：视图区就是能够直观看到的列表区，此时的元素都是真实的 DOM 元素。
+- 缓冲区：缓冲区是为了防止用户上滑或者下滑过程中，出现白屏等效果。（缓冲区和视图区为渲染真实的 DOM ）
+- 虚拟区：对于用户看不见的区域（除了缓冲区），剩下的区域，不需要渲染真实的 DOM 元素。虚拟列表就是通过这个方式来减少页面上 DOM 元素的数量。
+
+具体实现思路。
+
+- 通过 useRef 获取元素，缓存变量。
+- useEffect 初始化计算容器的高度。截取初始化列表长度。这里需要 div 占位，撑起滚动条。
+- 通过监听滚动容器的 onScroll 事件，根据 scrollTop 来计算渲染区域向上偏移量, 这里需要注意的是，当用户向下滑动的时候，为了渲染区域，能在可视区域内，可视区域要向上滚动；当用户向上滑动的时候，可视区域要向下滚动。
+- 通过重新计算 end 和 start 来重新渲染列表。
+
+![虚拟列表](https://s2.loli.net/2022/03/10/OcXmqW91hMaik7J.gif)
+
+
+
+## 13. 细节处理
+
+### 13.1 React 中的防抖与节流
+
+- **防抖**
+
+    防抖和节流在 React 应用中是很常用的，防抖很适合 React 表单的场景，比如点击按钮防抖，search 输入框。举一个简单的例子。
+
+    ```jsx
+    export class DebounceDemo extends React.Component {
+      constructor(props) {
+        super(props);
+      }
+      handleClick = () => {
+        console.log("点击事件-表单提交-调用接口");
+      };
+      handleChange = (e) => {
+        console.log("搜索框-请求数据");
+      };
+      render() {
+        return (
+          <div>
+            <input placeholder="搜索表单" onChange={this.handleChange} />
+            <br />
+            <button onClick={this.handleClick}> 点击 </button>
+          </div>
+        );
+      }
+    }
+    ```
+
+    如上，当点击按钮的时候，向服务端发起数据交互；输入 input 时候，同样会向服务端进行数据交互，请求搜索的数据。对于如上的情况如果不做任何优化处理的话，连续点击按钮，或者 input 输入内容的时候，就会出现这种情况。
+
+    ![没有防抖](https://s2.loli.net/2022/03/10/2wEDrQ6BmftzPoK.gif)
+
+    如上，会频繁和服务端交互，很显然这种情况是不符合常理的。所以需要防抖处理。
+
+    ```js
+    constructor(props){
+        super(props)
+        this.handleClick = debounce(this.handleClick,500)  /* 防抖 500 毫秒  */
+        this.handleChange = debounce(this.handleChange,300) /* 防抖 300 毫秒 */
+    }
+    ```
+
+    ![使用防抖](https://s2.loli.net/2022/03/10/lJYLhTVbpegqnBd.gif)
+
+- **节流**
+
+    节流函数一般也用于频繁触发的事件中，比如监听滚动条滚动。
+
+    ```jsx
+    export function ThrottleDemo() {
+      /* useCallback 防止每次组件更新都重新绑定节流函数  */
+      const handleScroll = React.useCallback(
+        throttle(function () {
+          /* 可以做一些操作，比如曝光上报等 */
+        }, 300)
+      );
+      return (
+        <div className="scrollIndex" onScroll={handleScroll}>
+          <div className="scrollContent">hello,world</div>
+        </div>
+      );
+    }
+    ```
+
+    如上将监听滚动函数做节流处理，300 毫秒触发一次。用 useCallback 防止每一次组件更新重新绑定节流函数。
+
+防抖节流总结：
+
+- **防抖函数**一般用于表单搜索，点击事件等场景，**目的就是为了防止短时间内多次触发事件**。
+- **节流函数一般为了降低函数执行的频率**，比如滚动条滚动。
+
+### 13.2 按需引入
+
+按需引入本质上是为项目瘦身，开发者在做 React 项目的时候，会用到 antd 之类的 UI 库，值得思考的一件事是，开发者如果只是用到了  antd 中的个别组件，比如 Button，就要把整个样式库引进来，打包就会发现，体积因为引入了整个样式文件大了很多。所以可以通过 `.babelrc` 实现按需引入。
+
+瘦身前体积：
+
+![按需引入之前文件大小 (2)](https://s2.loli.net/2022/03/10/S6v1wBnrGALP3dy.png)
+
+.babelrc 增加对 antd 样式按需引入：
+
+```json
+["import", {
+    "libraryName":
+    "antd",
+    "libraryDirectory": "es",
+    "style": true
+}]
+```
+
+瘦身后体积：
+
+![按需引入之后文件大小 (2)](https://s2.loli.net/2022/03/10/mMJW3I4bn2DGc9T.png)
+
+### 13.3 React 动画
+
+React 写动画也是一个比较棘手的问题。高频率的 setState 会给应用性能带来挑战，这种情况在 M 端更加明显，因为 M  端的渲染能力受到手机性能的影响较大。所以对 React 动画的处理要格外注意。我这里总结了三种 React 使用动画的方式，以及它们的权重。
+
+#### 13.3.1 首选 动态添加类名
+
+第一种方式是通过 transition，animation 实现动画然后写在 class 类名里面，通过动态切换类名，达到动画的目的。
+
+```jsx
+import React from "react";
+import "./react_animation.css";
+
+export function DynamicAddClassName() {
+  const [isAnimation, setAnimation] = React.useState(false);
+  return (
+    <div>
+      <button onClick={() => setAnimation(true)}>改变颜色</button>
+      <div className={isAnimation ? "current animation" : "current"}></div>
+    </div>
+  );
+}
+```
+
+```css
+.current {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid #ccc;
+}
+
+.animation {
+  animation: 1s changeColor;
+  background: yellowgreen;
+}
+
+@keyframes changeColor {
+  0% {
+    background: #c00;
+  }
+
+  50% {
+    background: orange;
+  }
+
+  100% {
+    background: yellowgreen;
+  }
+}
+```
+
+![动态添加类名](https://s2.loli.net/2022/03/10/pnBzmofFJVLGEbe.gif)
+
+这种方式是最优先推荐的方式，这种方式既不需要频繁 setState ，也不需要改变 DOM 。
+
+#### 13.3.2 其次 操纵原生 DOM
+
+如果第一种方式不能满足要求的话，或者必须做一些 js 实现复杂的动画效果，那么可以获取原生 DOM ，然后单独操作 DOM 实现动画功能，这样就避免了 setState  改变带来 React Fiber 深度调和渲染的影响。
+
+```jsx
+export function ManipulateNativeDOM() {
+  const dom = React.useRef(null);
+  const changeColor = () => {
+    const target = dom.current;
+    target.style.background = "#c00";
+    setTimeout(() => {
+      target.style.background = "orange";
+      setTimeout(() => {
+        target.style.background = "yellowgreen";
+      }, 500);
+    }, 500);
+  };
+  return (
+    <div>
+      <button onClick={changeColor}>改变颜色</button>
+      <div className="current" ref={dom}></div>
+    </div>
+  );
+}
+```
+
+同样达到如上的效果
+
+#### 13.3.3 再者 setState + CSS3
+
+如果 ①  和 ②  都不能满足要求，一定要使用 setState 实时改变DOM元素状态的话，那么尽量采用 css3 ， css3 开启硬件加速，使 GPU (Graphics Processing Unit) 发挥功能，从而提升性能。
+
+比如想要改变元素位置 left ，top 值，可以换一种思路通过改变 transform: translate，**transform 是由 GPU 直接控制渲染的，所以不会造成浏览器的重排。**
+
+```jsx
+export function SetStateCSS3() {
+  const [position, setPosition] = React.useState({ left: 0, top: 0 });
+  const changePosition = () => {
+    let time = 0;
+    let timer = setInterval(() => {
+      if (time === 30) clearInterval(timer);
+      setPosition({ left: time * 10, top: time * 10 });
+      time++;
+    }, 30);
+  };
+  const { left, top } = position;
+  return (
+    <div>
+      <button onClick={changePosition}>改变位置</button>
+      <div
+        className="current"
+        style={{ transform: `translate(${left}px,${top}px )` }}
+      ></div>
+    </div>
+  );
+}
+```
+
+![SetStateCSS3](https://s2.loli.net/2022/03/10/KbDXNfwQLm5gYOR.gif)
+
+### 13.4 及时清除定时器/延时器/监听器
+
+如果在 React 项目中，用到了定时器，延时器和事件监听器，注意要在对应的生命周期，清除它们，不然可能会造成内部泄露的情况。
+
+```jsx
+export class ClearInTimeDemo extends React.Component {
+  current = null;
+  poll = () => {}; /* 轮训 */
+  handleScroll = () => {}; /* 处理滚动事件 */
+  componentDidMount() {
+    this.timer = setInterval(() => {
+      this.poll(); /* 2 秒进行一次轮训事件 */
+    }, 2000);
+    this.current.addEventListener("scroll", this.handleScroll);
+  }
+  componentWillUnmount() {
+    clearInterval(this.timer); /* 清除定时器 */
+    this.current.removeEventListener("scroll", this.handleScroll);
+  }
+  render() {
+    return (
+      <div ref={(node) => (this.current = node)}>hello,let us learn React!</div>
+    );
+  }
+}
+```
+
+在 componentWillUnmount 生命周期及时清除延时器和事件监听器。
+
+```jsx
+export function ClearInTimeDemo2() {
+  const dom = React.useRef(null);
+  const poll = () => {};
+  const handleScroll = () => {};
+  React.useEffect(() => {
+    let timer = setInterval(() => {
+      poll(); /* 2 秒进行一次轮训事件 */
+    }, 2000);
+    dom.current.addEventListener("scroll", handleScroll);
+    return function () {
+      clearInterval(timer);
+      dom.current.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+  return <div ref={dom}>hello,let us learn React!</div>;
+}
+```
+
+在 useEffect 或者 useLayoutEffect 第一个参数 create 的返回函数 destory 中，做一些清除定时器/延时器的操作。
+
+### 13.5 合理使用 state
+
+React 并不像 vue 那样响应式数据流。 在 vue 中有专门的 dep 做依赖收集，可以自动收集字符串模版的依赖项，只要没有引用的 data 数据， 通过 `this.aaa = bbb` ，在 vue 中是不会更新渲染的。**但是在 React 中只要触发 setState 或 useState  ，如果没有渲染控制的情况下，组件就会渲染，暴露一个问题就是，如果视图更新不依赖于当前 state  ，那么这次渲染也就没有意义。所以对于视图不依赖的状态，就可以考虑不放在 state 中。**
+
+打个比方，比如想在滚动条滚动事件中，记录一个 scrollTop 位置，那么在这种情况下，用 state 保存 scrollTop 就没有任何意义而且浪费性能。
+
+```jsx
+export class ProperUseState extends React.Component {
+  node = null;
+  scrollTop = 0;
+  handleScroll = () => {
+    const { scrollTop } = this.node;
+    this.scrollTop = scrollTop;
+  };
+  render() {
+    return (
+      <div
+        ref={(node) => (this.node = node)}
+        onScroll={this.handleScroll}
+      ></div>
+    );
+  }
+}
+```
+
+上述把 scrollTop 直接绑定在 this 上，而不是通过 state 管理，这样好处是滚动条滚动不需要触发 setState ，从而避免了无用的更新。
+
+对于函数组件，因为不存在组件实例，但是函数组件有 hooks ，所以可以通过一个 useRef 实现同样的效果。
+
+```jsx
+export function ProperUseStateFn() {
+  const dom = React.useRef(null);
+  const scrollTop = React.useRef(0);
+  const handleScroll = () => {
+    scrollTop.current = dom.current.scrollTop;
+  };
+  return <div ref={dom} onScroll={handleScroll}></div>;
+}
+```
+
+如上用 useRef ，来记录滚动条滚动时 scrollTop 的值。
+
+### 13.6 建议不要在 hooks 的参数中执行函数或者 new 实例
+
+有一种场景是平时比较容易忽略的，就是在 `hooks` 的参数中执行函数或者 new 实例，比如如下这样：
+
+```js
+const hook1 = useRef(fn())
+const hook2 = useRef(new Fn())
+```
+
+不建议这么写。为什么呢？
+
+- 首先函数每次 `rerender` 都会执行 hooks ，那么在执行 hooks 函数的同时，也会执行函数的参数，比如上面的代码片段中的 `fn()` 和 `new Fn()`，也就是每一次 rerender 都会执行 fn 或者是 new 一个实例。这可能不是开发者期望的，而执行函数，或创建实例也成了一种性能浪费，在一些极端情况下，可能会造成内存泄漏，比如在创建新的 dom 元素，但是没有进行有效的回收。
+- 在 hooks 原理章节讲到过，函数组件在**初始化**和**更新**流程中，会使用不同的 hooks 对象，还是以 `useRef` 为例子，在初始化阶段用的是 `mountRef`函数，在更新阶段用的是 `updateRef`函数，开发者眼睛看见的是 `useRef`，在 React 底层却悄悄的替换成了不同的函数。 **更重要的是大部分的 hooks 参数都作为初始化的参数，在更新阶段压根没有用到，那么传入的参数也就没有了意义**，回到上述代码片段，`fn()` 和 `new Fn()`在更新阶段根本就没有被 `useRef`接收， 无辜的成了流浪者。
+
+还是以 `useRef` 为例子，看一下它在不同阶段的真正面目
+
+**初始化**
+
+```js
+function mountRef(initialValue) {
+  const hook = mountWorkInProgressHook();
+  const ref = {current: initialValue};
+  hook.memoizedState = ref;
+  return ref;
+}
+```
+
+初始化的时候用到了 initialValue ，也就是第一个参数。
+
+**更新阶段**
+
+```js
+function updateRef(initialValue) {
+  const hook = updateWorkInProgressHook();
+  return hook.memoizedState;
+}
+```
+
+在更新阶段根本没有用到 initialValue。
+
+那么回到最初的目的上来，如果开发者真的想在 hooks 中，以函数组件执行结果或者是实例对象作为参数的话，那么应该怎么处理呢。这个很简单，可以用 useMemo 包装一下。比如：
+
+```js
+const hook = useRef(null)
+const value = useMemo(()=>{
+     hook.current = new Fn()
+},[ changeValue ])
+```
+
+如上，通过 useMemo 派生出来的 value ，作为初始化 Ref 的值，这样做还有一个好处，如果 Ref 的值，依赖于 `changeValue` ，当 changeValue 改变的时候，会重新给 Ref 对象赋值。

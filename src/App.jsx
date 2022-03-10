@@ -2,13 +2,13 @@
  * @Author: Zhou Xianghui
  * @Date: 2022-01-13 12:57:54
  * @LastEditors: Zhou Xianghui
- * @LastEditTime: 2022-03-09 14:06:19
+ * @LastEditTime: 2022-03-10 10:50:20
  * @FilePath: \advancend-react\src\App.jsx
  * @Description:
  * after a long, long, long time
  * Copyright (c) 2022 by Zhou Xianghui/Qianjiang Tech, All Rights Reserved.
  */
-import "./App.css";
+// import "./App.css";
 import React from "react";
 // import {
 //   ProviderDemo,
@@ -36,6 +36,14 @@ import { SuspenseDemo } from "./components/2_optimization/11_render_tuning/suspe
 import { ReactLazyDemo } from "./components/2_optimization/11_render_tuning/react_lazy";
 import { ErrorBoundaryDemo } from "./components/2_optimization/11_render_tuning/error_boundary";
 import { ReactLazySuspecePractice } from "./components/2_optimization/11_render_tuning/practice";
+import { TimeSliceContainerDemo1 } from "./components/2_optimization/12_handle_massive_data/time_slice";
+import { VirtualList } from "./components/2_optimization/12_handle_massive_data/vitual_list";
+import { DebounceDemo } from "./components/2_optimization/13_detail_process";
+import {
+  DynamicAddClassName,
+  ManipulateNativeDOM,
+  SetStateCSS3,
+} from "./components/2_optimization/13_detail_process/react_animation";
 // import { ProviderDemo } from "./components/basic/7_context/dynamic_context";
 // import { B, GrandFather } from "./components/basic/7_context";
 // import { PropsComponentDemo, FatherIndex } from "./components/basic/4_props";
@@ -119,7 +127,15 @@ function App() {
       {/* <SuspenseDemo /> */}
       {/* <ReactLazyDemo /> */}
       {/* <ErrorBoundaryDemo /> */}
-      <ReactLazySuspecePractice />
+      {/* <ReactLazySuspecePractice /> */}
+
+      {/* <TimeSliceContainerDemo1 /> */}
+      {/* <VirtualList /> */}
+
+      {/* <DebounceDemo /> */}
+      {/* <DynamicAddClassName /> */}
+      {/* <ManipulateNativeDOM /> */}
+      <SetStateCSS3 />
     </div>
   );
 }
