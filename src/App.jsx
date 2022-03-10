@@ -2,7 +2,7 @@
  * @Author: Zhou Xianghui
  * @Date: 2022-01-13 12:57:54
  * @LastEditors: Zhou Xianghui
- * @LastEditTime: 2022-03-10 10:50:20
+ * @LastEditTime: 2022-03-10 12:49:03
  * @FilePath: \advancend-react\src\App.jsx
  * @Description:
  * after a long, long, long time
@@ -44,6 +44,11 @@ import {
   ManipulateNativeDOM,
   SetStateCSS3,
 } from "./components/2_optimization/13_detail_process/react_animation";
+import {
+  EventDemo,
+  OneClickEvent,
+  StopPropgation,
+} from "./components/3_react_principle/14_event_principle";
 // import { ProviderDemo } from "./components/basic/7_context/dynamic_context";
 // import { B, GrandFather } from "./components/basic/7_context";
 // import { PropsComponentDemo, FatherIndex } from "./components/basic/4_props";
@@ -135,7 +140,11 @@ function App() {
       {/* <DebounceDemo /> */}
       {/* <DynamicAddClassName /> */}
       {/* <ManipulateNativeDOM /> */}
-      <SetStateCSS3 />
+      {/* <SetStateCSS3 /> */}
+
+      {/* <EventDemo /> */}
+      {/* <StopPropgation /> */}
+      <OneClickEvent />
     </div>
   );
 }
