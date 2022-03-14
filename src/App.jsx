@@ -2,13 +2,13 @@
  * @Author: Zhou Xianghui
  * @Date: 2022-01-13 12:57:54
  * @LastEditors: Zhou Xianghui
- * @LastEditTime: 2022-03-10 12:49:03
+ * @LastEditTime: 2022-03-14 10:27:55
  * @FilePath: \advancend-react\src\App.jsx
  * @Description:
  * after a long, long, long time
  * Copyright (c) 2022 by Zhou Xianghui/Qianjiang Tech, All Rights Reserved.
  */
-// import "./App.css";
+import "./App.css";
 import React from "react";
 // import {
 //   ProviderDemo,
@@ -49,6 +49,10 @@ import {
   OneClickEvent,
   StopPropgation,
 } from "./components/3_react_principle/14_event_principle";
+import {
+  HooksIfDemoContainer,
+  HooksUpdate,
+} from "./components/3_react_principle/17_hooks_principle";
 // import { ProviderDemo } from "./components/basic/7_context/dynamic_context";
 // import { B, GrandFather } from "./components/basic/7_context";
 // import { PropsComponentDemo, FatherIndex } from "./components/basic/4_props";
@@ -144,7 +148,10 @@ function App() {
 
       {/* <EventDemo /> */}
       {/* <StopPropgation /> */}
-      <OneClickEvent />
+      {/* <OneClickEvent /> */}
+
+      {/* <HooksIfDemoContainer /> */}
+      <HooksUpdate />
     </div>
   );
 }
