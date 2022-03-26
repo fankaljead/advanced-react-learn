@@ -409,3 +409,44 @@ export class DemoRef2 extends Component {
     );
   }
 }
+
+function InnerText() {
+  useEffect(() => {
+    console.log("son update");
+  });
+  const handleClick = () => {
+    let parent = document.getElementById("parent-number");
+    parent.innerText = parseFloat(parent.innerText) + 1;
+  };
+  return (
+    <div>
+      <h1>
+        son number: <span id="son-number">1</span>
+      </h1>
+      <button onClick={handleClick}>parent increment</button>
+    </div>
+  );
+}
+
+export function DocumentQueryDemo() {
+  useEffect(() => {
+    console.log("parent update");
+  });
+
+  const handleClick = () => {
+    let documentQueryDemo = document.getElementById("DocumentQueryDemo");
+    console.log("documentQueryDemo: ", documentQueryDemo);
+    let son = document.getElementById("son-number");
+    son.innerText = parseFloat(son.innerText) + 1;
+  };
+  return (
+    <div id="DocumentQueryDemo">
+      <h1>使用 document 选择器 获取 DOM</h1>
+      <h1>
+        parent number: <span id="parent-number">1</span>
+      </h1>
+      <button onClick={handleClick}>son increment</button>
+      <InnerText />
+    </div>
+  );
+}

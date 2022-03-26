@@ -26,7 +26,7 @@ export class LifeCycleC extends Component {
   // ===== mountClassInstance begin =====
   // 1.
   constructor(props) {
-    super(props); 
+    super(props);
     console.log(`constructor: `, props);
   }
 
@@ -272,4 +272,83 @@ export class TestClassComponent extends Component {
       </div>
     );
   }
+}
+
+function FuncComponentLifeCycle() {
+  const [num, setNum] = useState(0);
+
+  useEffect(() => {
+    console.log("componentDidUpdate0");
+    return () => {
+      console.log("componentWillUmount20 ");
+    };
+  });
+
+  useEffect(() => {
+    console.log("num:", num);
+    return () => {
+      console.log("componentWillUmount num:", num);
+    };
+  }, [num]);
+
+  useEffect(() => {
+    return () => {
+      console.log("componentWillUmount1 ");
+    };
+  }, []);
+
+  useEffect(() => {
+    console.log("componentDidUpdate");
+    return () => {
+      console.log("componentWillUmount2 ");
+    };
+  });
+
+  return (
+    <div>
+      <h1>Num: {num}</h1>
+      <button onClick={() => setNum(num + 1)}>increment</button>
+    </div>
+  );
+}
+
+export function FuncComponentLifeCycleContainer() {
+  const [show, setShow] = useState(true);
+
+  return (
+    <div>
+      {show && <FuncComponentLifeCycle />}
+      <button onClick={() => setShow(!show)}>toggle</button>
+    </div>
+  );
+}
+
+class GetDrivedStateFromPropsClass extends React.PureComponent {
+  state = {};
+  static propTypes = {
+    number: PropTypes.number,
+  };
+  static getDerivedStateFromProps(nextProps, preState) {
+    console.log("getDerivedStateFromProps newProps:", nextProps);
+    console.log("getDerivedStateFromProps preState:", preState);
+    return Object.assign({}, preState);
+  }
+
+  render() {
+    return <h1>子组件 props number: {this.props.number}</h1>;
+  }
+}
+
+export function GetDrivedStateFromPropsDemo() {
+  const [number, setNumber] = useState(0);
+  const [number2, setNumber2] = useState(0);
+  return (
+    <div>
+      <GetDrivedStateFromPropsClass number={number} />
+      <h1>number1:{number}</h1>
+      <h1>number2:{number2}</h1>
+      <button onClick={() => setNumber(number + 1)}>increment</button>
+      <button onClick={() => setNumber2(number2 + 1)}>increment</button>
+    </div>
+  );
 }

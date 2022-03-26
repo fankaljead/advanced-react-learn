@@ -2,7 +2,7 @@
  * @Author: Zhou Xianghui
  * @Date: 2022-01-13 12:57:54
  * @LastEditors: Zhou Xianghui
- * @LastEditTime: 2022-03-14 10:27:55
+ * @LastEditTime: 2022-03-26 13:41:52
  * @FilePath: \advancend-react\src\App.jsx
  * @Description:
  * after a long, long, long time
@@ -32,7 +32,10 @@ import React from "react";
 // } from "./components/2_optimization/10_render_control/pure_component";
 // import { ShouldComponentUpdate } from "./components/2_optimization/10_render_control/shouldComponentUpdate";
 // import { ReactMemoDemo } from "./components/2_optimization/10_render_control/react_memo";
-import { SuspenseDemo } from "./components/2_optimization/11_render_tuning/suspense";
+import {
+  ProfilePage,
+  SuspenseDemo,
+} from "./components/2_optimization/11_render_tuning/suspense";
 import { ReactLazyDemo } from "./components/2_optimization/11_render_tuning/react_lazy";
 import { ErrorBoundaryDemo } from "./components/2_optimization/11_render_tuning/error_boundary";
 import { ReactLazySuspecePractice } from "./components/2_optimization/11_render_tuning/practice";
@@ -53,6 +56,19 @@ import {
   HooksIfDemoContainer,
   HooksUpdate,
 } from "./components/3_react_principle/17_hooks_principle";
+import {
+  FuncComponentLifeCycleContainer,
+  GetDrivedStateFromPropsDemo,
+} from "./components/1_basic/5_lifeCycle";
+import { DocumentQueryDemo } from "./components/1_basic/6_ref";
+import { ReactReduxDemo } from "./components/3_react_ecosystems/19_react_redux";
+import {
+  CustomHooksDemo,
+  UseAsyncStateDemo,
+  UseDebounceStateDemo,
+  UseEffectPropsDemo,
+  UseGetDOMDemo,
+} from "./components/5_practice/21_customed_hooks";
 // import { ProviderDemo } from "./components/basic/7_context/dynamic_context";
 // import { B, GrandFather } from "./components/basic/7_context";
 // import { PropsComponentDemo, FatherIndex } from "./components/basic/4_props";
@@ -151,7 +167,22 @@ function App() {
       {/* <OneClickEvent /> */}
 
       {/* <HooksIfDemoContainer /> */}
-      <HooksUpdate />
+      {/* <HooksUpdate /> */}
+
+      {/* <FuncComponentLifeCycleContainer /> */}
+      {/* <DocumentQueryDemo /> */}
+      {/* <ReactReduxDemo /> */}
+
+      {/* <GetDrivedStateFromPropsDemo /> */}
+
+      {/* <ProfilePage /> */}
+
+      {/* <CustomHooksDemo /> */}
+      {/* <UseDebounceStateDemo /> */}
+
+      {/* <UseAsyncStateDemo /> */}
+      {/* <UseGetDOMDemo /> */}
+      <UseEffectPropsDemo />
     </div>
   );
 }
