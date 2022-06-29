@@ -2,7 +2,7 @@
  * @Author: Zhou Xianghui
  * @Date: 2022-03-08 15:14:25
  * @LastEditors: Zhou Xianghui
- * @LastEditTime: 2022-03-09 09:10:27
+ * @LastEditTime: 2022-04-06 17:19:06
  * @FilePath: \advancend-react\src\components\2_optimization\10_render_control\react_memo.jsx
  * @Description: React.memo
  * after a long, long, long time
@@ -61,4 +61,4 @@ export class ReactMemoDemo extends React.Component {
 // 一般情况下不要试图组件通过第二个参数直接返回 true 来阻断渲染
 // 这样可能会造成很多麻烦
 // 尽量不要这么尝试
-export const NewIndex = React.memo(Index, () => true);
+export const NewIndex = React.memo(ReactMemoDemo, () => true);

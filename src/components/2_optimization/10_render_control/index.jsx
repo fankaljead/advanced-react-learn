@@ -2,7 +2,7 @@
  * @Author: Zhou Xianghui
  * @Date: 2022-03-07 10:38:01
  * @LastEditors: Zhou Xianghui
- * @LastEditTime: 2022-03-07 11:10:12
+ * @LastEditTime: 2022-04-06 17:20:58
  * @FilePath: \advancend-react\src\components\2_optimization\10_render_control\index.jsx
  * @Description: 10 渲染控制
  * after a long, long, long time
@@ -115,19 +115,23 @@ Children2.propTypes = {
 export const UseMemoDemo1 = () => {
   const [numberA, setNumberA] = React.useState(0);
   const [numberB, setNumberB] = React.useState(0);
+  const [numberC, setNumberC] = React.useState(0);
   return (
     <div>
       {React.useMemo(
         () => (
           <Children2 numberA={numberA} numberB={numberB} />
         ),
-        [numberA, numberB]
+        [numberA, numberB, numberC]
       )}
       <button onClick={() => setNumberA(numberA + 1)}>
         改变numberA: {numberA}
       </button>
       <button onClick={() => setNumberB(numberB + 1)}>
         改变numberB {numberB}
+      </button>
+      <button onClick={() => setNumberC(numberC + 1)}>
+        改变numberC {numberC}
       </button>
     </div>
   );

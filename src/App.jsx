@@ -2,7 +2,7 @@
  * @Author: Zhou Xianghui
  * @Date: 2022-01-13 12:57:54
  * @LastEditors: Zhou Xianghui
- * @LastEditTime: 2022-03-26 13:41:52
+ * @LastEditTime: 2022-06-07 19:08:16
  * @FilePath: \advancend-react\src\App.jsx
  * @Description:
  * after a long, long, long time
@@ -53,12 +53,16 @@ import {
   StopPropgation,
 } from "./components/3_react_principle/14_event_principle";
 import {
+  ClassComponent,
+  FunctionComponent,
   HooksIfDemoContainer,
   HooksUpdate,
 } from "./components/3_react_principle/17_hooks_principle";
 import {
   FuncComponentLifeCycleContainer,
   GetDrivedStateFromPropsDemo,
+  UseeUpdateDemo,
+  UseRefUpdate,
 } from "./components/1_basic/5_lifeCycle";
 import { DocumentQueryDemo } from "./components/1_basic/6_ref";
 import { ReactReduxDemo } from "./components/3_react_ecosystems/19_react_redux";
@@ -68,7 +72,11 @@ import {
   UseDebounceStateDemo,
   UseEffectPropsDemo,
   UseGetDOMDemo,
+  UseUpdateDemo,
 } from "./components/5_practice/21_customed_hooks";
+import ClassStateComponent from "./components/1_basic/3_state";
+import { UseMemoDemo1 } from "./components/2_optimization/10_render_control";
+import { UseEffectDemo } from "./components/5_practice/21_customed_hooks/hooks_test";
 // import { ProviderDemo } from "./components/basic/7_context/dynamic_context";
 // import { B, GrandFather } from "./components/basic/7_context";
 // import { PropsComponentDemo, FatherIndex } from "./components/basic/4_props";
@@ -182,7 +190,17 @@ function App() {
 
       {/* <UseAsyncStateDemo /> */}
       {/* <UseGetDOMDemo /> */}
-      <UseEffectPropsDemo />
+      {/* <UseEffectPropsDemo /> */}
+      {/* <ClassStateComponent /> */}
+      {/* <UseUpdateDemo /> */}
+
+      {/* <UseMemoDemo1 /> */}
+      {/* <UseEffectDemo /> */}
+
+      {/* <ClassComponent />
+      <FunctionComponent /> */}
+      {/* <UseRefUpdate /> */}
+      <UseeUpdateDemo />
     </div>
   );
 }

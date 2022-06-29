@@ -6,13 +6,13 @@ export default class ClassStateComponent extends Component {
   state = {
     name: "zxh",
     count: 1,
-    number: 1,
+    number: 0,
   };
   componentDidUpdate() {
     console.log(this.state);
   }
   // state 对象未变化更新 使用 PureComponent 不会触发更新
-  handleClick = () => {z
+  handleClick = () => {
     this.setState({ name: "zxh", count: this.state.count + 1 - 1 }, () => {
       console.log("handleClick:", this.state);
     });
@@ -71,7 +71,7 @@ export default class ClassStateComponent extends Component {
         console.log(v, this.state.number);
       });
     });
-    Promise.resolve("promise click1").then((v) => {
+    Promise.resolve("promise click2").then((v) => {
       this.setState({ number: this.state.number + 1 }, () => {
         console.log(v, this.state.number);
       });
@@ -132,6 +132,11 @@ export default class ClassStateComponent extends Component {
       console.log(`正常更新 number: ${this.state.number}`);
     });
   };
+  forceUpdateHandleClick = () => {
+    this.forceUpdate(() => {
+      console.log("forceUpdate:", this.state);
+    });
+  };
   render() {
     return (
       <div
@@ -163,6 +168,7 @@ export default class ClassStateComponent extends Component {
         <button onClick={this.handleClick8}>
           异步 settimeout promise 更新
         </button>
+        <button onClick={this.forceUpdateHandleClick}>force update</button>
       </div>
     );
   }

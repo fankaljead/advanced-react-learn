@@ -2,8 +2,8 @@
  * @Author: Zhou Xianghui
  * @Date: 2022-03-05 10:47:01
  * @LastEditors: Zhou Xianghui
- * @LastEditTime: 2022-03-07 10:25:10
- * @FilePath: \advancend-react\src\components\basic\9_hoc\index.jsx
+ * @LastEditTime: 2022-04-01 12:42:14
+ * @FilePath: \advancend-react\src\components\1_basic\9_hoc\index.jsx
  * @Description: 高阶组件
  * after a long, long, long time
  * Copyright (c) 2022 by Zhou Xianghui/Qianjiang Tech, All Rights Reserved.
@@ -198,7 +198,7 @@ export function UseEventWatchDemo() {
   function HOC(Component) {
     const proDidMount = Component.prototype.componentDidMount;
     Component.prototype.componentDidMount = function () {
-      console.log("劫持生命周期：componentDidMount");
+      console.log("劫持生命周期: componentDidMount");
       proDidMount.call(this);
     };
     return Component;

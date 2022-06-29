@@ -352,3 +352,47 @@ export function GetDrivedStateFromPropsDemo() {
     </div>
   );
 }
+const log = console.log;
+export function UseRefUpdate() {
+  log("UseRefUpdate");
+  const ref = useRef(0);
+  const [number, setNumber] = useState(0);
+  useEffect(() => {
+    if (ref.current == 2) {
+      log("组件更新完成: componentDidUpdate");
+    } else {
+      ref.current++;
+    }
+  });
+
+  return (
+    <div>
+      <h1>number: {number}</h1>
+      <button onClick={() => setNumber(number + 1)}>increment</button>
+    </div>
+  );
+}
+
+
+const useUpdate = (fn) => {
+  const ref = useRef(0);
+  useEffect(() => {
+    if (ref.current >= 2) {
+      fn();
+    }
+    ref.current++;
+  });
+};
+
+export function UseeUpdateDemo() {
+  const [number, setNumber] = useState(0);
+  useUpdate(() => {
+    log("UseUpdateDemo update");
+  });
+  return (
+    <div>
+      <h1>useUpdate number: {number}</h1>
+      <button onClick={() => setNumber(number + 1)}>increment</button>
+    </div>
+  );
+}

@@ -2,7 +2,7 @@
  * @Author: Zhou Xianghui
  * @Date: 2022-03-14 09:30:31
  * @LastEditors: Zhou Xianghui
- * @LastEditTime: 2022-03-14 10:54:12
+ * @LastEditTime: 2022-06-05 19:24:21
  * @FilePath: \advancend-react\src\components\3_react_principle\17_hooks_principle\index.jsx
  * @Description: Hooks 原理
  * after a long, long, long time
@@ -95,3 +95,45 @@ export function HooksUpdate() {
 // }
 
 
+export class ClassComponent extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      number: 0,
+    };
+  }
+  handleClick = () => {
+    for (let i = 0; i < 5; ++i) {
+      setTimeout(() => {
+        this.setState({ number: this.state.number + 1 });
+        console.log('class num:', this.state.number);
+      }, 1000);
+    }
+  };
+  render() {
+    return (
+      <div>
+        <h1>class number:{this.state.number}</h1>
+        <button onClick={this.handleClick}>num++</button>
+      </div>
+    );
+  }
+}
+
+export function FunctionComponent() {
+  const [num, setNum] = React.useState(0);
+  const handleClick = () => {
+    for (let i = 0; i < 5; ++i) {
+      setTimeout(() => {
+        setNum(num + 1);
+        console.log("function num:", num);
+      }, 1000);
+    }
+  };
+  return (
+    <div>
+      <h1>function num:{num}</h1>
+      <button onClick={handleClick}>num++</button>
+    </div>
+  );
+}

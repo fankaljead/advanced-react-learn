@@ -2,7 +2,7 @@
  * @Author: Zhou Xianghui
  * @Date: 2022-03-26 12:38:36
  * @LastEditors: Zhou Xianghui
- * @LastEditTime: 2022-03-26 13:43:03
+ * @LastEditTime: 2022-04-01 12:14:08
  * @FilePath: \advancend-react\src\components\5_practice\21_customed_hooks\index.jsx
  * @Description:
  * after a long, long, long time
@@ -20,6 +20,71 @@
 // const [ xxx , ... ] = useXXX(paraA, paraB...)
 
 import React from "react";
+
+const useUpdate = (fn = () => {}, deps = []) => {
+  const ref = React.useRef(false);
+
+  React.useEffect(() => {
+    if (ref.current) {
+      fn();
+    } else {
+      ref.current = true;
+    }
+  }, deps);
+};
+
+function UseEffectClean({ count }) {
+  React.useEffect(() => {
+    console.log("no deps UseEffectClean");
+    return () => {
+      console.log("no deps clean");
+    };
+  });
+
+  React.useEffect(() => {
+    console.log("count UseEffectClean");
+    return () => {
+      console.log("count clean");
+    };
+  }, [count]);
+
+  React.useEffect(() => {
+    console.log("[ ] UseEffectClean");
+    return () => {
+      console.log("[] clean");
+    };
+  }, []);
+  return <h1>use effect clean count:{count}</h1>;
+}
+
+export function UseUpdateDemo() {
+  const [count, setCount] = React.useState(0);
+  const [count2, setCount2] = React.useState(0);
+  const [count3, setCount3] = React.useState(0);
+  const [show, setShow] = React.useState(true);
+
+  useUpdate(() => {
+    console.log("count: ", count);
+  }, [count]);
+
+  useUpdate(() => {
+    console.log("count2: ", count2);
+  }, [count2]);
+
+  React.useEffect(() => {
+    console.log("useeffect count3: ", count3);
+  }, [count3]);
+
+  return (
+    <div>
+      {show && <UseEffectClean count={count} />}
+      <button onClick={() => setCount(count + 1)}>count + 1</button>
+      <button onClick={() => setCount2(count2 + 1)}>count2 + 1</button>
+      <button onClick={() => setCount3(count3 + 1)}>count3 + 1</button>
+      <button onClick={() => setShow(!show)}>toggle show</button>
+    </div>
+  );
+}
 
 // 自定义 hook 记录函数状态的执行次数和是否是第一次渲染
 function useRenderCount() {
@@ -192,3 +257,16 @@ export function UseEffectPropsDemo() {
     </div>
   );
 }
+
+const useUser = () => {
+  const [user, setUser] = React.useState({
+    name: "",
+    age: "",
+  });
+
+  React.useEffect(() => {
+    console.log("user", user);
+  }, [user]);
+
+  return [user, setUser];
+};
